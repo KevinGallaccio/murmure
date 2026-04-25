@@ -1,8 +1,23 @@
-# murmure
+<p align="center">
+  <img src="resources/icon.svg" alt="murmure" width="96" height="96" />
+</p>
 
-> *On rend le murmure visible.*
->
-> A live-transcription display for hearing-impaired audiences at podcast festivals and live events.
+<h1 align="center">murmure</h1>
+
+<p align="center"><em>On rend le murmure visible.</em></p>
+
+<p align="center">
+  A live-transcription display for hearing-impaired audiences at podcast festivals and live events.
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-2745CF?style=flat-square" /></a>
+  <img alt="Electron 33" src="https://img.shields.io/badge/electron-33-2745CF?style=flat-square" />
+  <img alt="UI: FR · EN" src="https://img.shields.io/badge/UI-FR%20%C2%B7%20EN-2745CF?style=flat-square" />
+  <a href="https://github.com/KevinGallaccio/murmure/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/KevinGallaccio/murmure?style=flat-square&color=2745CF&label=release" /></a>
+</p>
+
+---
 
 **murmure** captures audio from a microphone, transcribes it in real time using AssemblyAI's Universal-3 Pro Streaming model, and projects the transcript full-screen onto a secondary monitor with typography you control. It's a small, focused desktop app for one job: making the spoken word readable in the room.
 

@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>murmure — études de logo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..800,0..100&family=Public+Sans:wght@400;500;600&family=Manrope:wght@500;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --paper: #F4F1EB;
+  --paper-deep: #EFE9DC;
+  --ink: #1A1816;
+  --muted: #6F6A60;
+  --muted-strong: #4A463E;
+  --hairline: #DBD5C7;
+
+  --d1-stage: #F1ECDF;
+  --d1-ink: #0F0F12;
+  --d1-amber: #D4A24C;
+
+  --d2-stage: #F4F1EB;
+  --d2-ink: #1B2330;
+  --d2-coral: #C97863;
+
+  --d3-stage: #FAFAF7;
+  --d3-ink: #000000;
+  --d3-indigo: #2745CF;
+
+  --light-stage: #FFFFFF;
+  --dark-stage: #0E0E10;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Public Sans', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: multiply;
+  opacity: 0.6;
+}
+
+body > * { position: relative; z-index: 2; }
+
+main, header.masthead, footer {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 64px;
+}
+
+.masthead {
+  padding-top: 80px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--hairline);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 32px;
+  margin-bottom: 96px;
+}
+
+.masthead .brand {
+  font-family: 'Fraunces', Georgia, serif;
+  font-variation-settings: "opsz" 144, "wght" 400, "SOFT" 50;
+  font-size: 56px;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+.masthead .meta {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.7;
+}
+
+.masthead .meta .label-line { display: block; }
+
+.masthead .meta .key { color: var(--muted-strong); }
+
+.direction {
+  padding-top: 96px;
+  padding-bottom: 96px;
+  border-top: 1px solid var(--hairline);
+}
+
+.direction:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.direction-header {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 32px;
+  align-items: baseline;
+  margin-bottom: 36px;
+}
+
+.direction-header .tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 22px;
+}
+
+.direction-header h2 {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "wght" 380, "SOFT" 60;
+  font-size: 64px;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.rationale {
+  margin-left: 132px;
+  max-width: 64ch;
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--ink);
+  margin-bottom: 56px;
+}
+
+.rationale .key {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-variation-settings: "opsz" 18, "wght" 380;
+  color: var(--muted-strong);
+}
+
+.hero-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 96px 0;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-stage::before {
+  content: attr(data-size);
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.hero-stage::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  width: 8px;
+  height: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.25);
+  border-right: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+.d1 .hero-stage { background: var(--d1-stage); }
+.d2 .hero-stage { background: var(--d2-stage); }
+.d3 .hero-stage { background: var(--d3-stage); }
+
+.hero-icon {
+  width: 360px;
+  height: 360px;
+  display: block;
+}
+
+.specimens-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.specimen {
+  background: var(--paper-deep);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  padding: 36px 36px 32px;
+  position: relative;
+}
+
+.specimen .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 28px;
+}
+
+.crop {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  opacity: 0.28;
+}
+.crop.tl { top: 10px; left: 10px; border-top: 1px solid var(--muted); border-left: 1px solid var(--muted); }
+.crop.tr { top: 10px; right: 10px; border-top: 1px solid var(--muted); border-right: 1px solid var(--muted); }
+.crop.bl { bottom: 10px; left: 10px; border-bottom: 1px solid var(--muted); border-left: 1px solid var(--muted); }
+.crop.br { bottom: 10px; right: 10px; border-bottom: 1px solid var(--muted); border-right: 1px solid var(--muted); }
+
+.lockup-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 92px;
+}
+
+.lockup-row .icon {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+}
+
+.wordmark {
+  font-size: 56px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.d1 .wordmark {
+  font-family: 'Public Sans', sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--d1-ink);
+}
+
+.d2 .wordmark {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--d2-ink);
+}
+
+.d3 .wordmark {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-variation-settings: "opsz" 96, "wght" 600;
+  letter-spacing: -0.04em;
+  color: var(--d3-ink);
+}
+
+.sizes-row {
+  display: flex;
+  gap: 28px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.size-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.size-cell .size-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.swatches-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.swatch {
+  aspect-ratio: 16 / 10;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 1px solid var(--hairline);
+  overflow: hidden;
+}
+
+.swatch.light { background: var(--light-stage); }
+.swatch.dark { background: var(--dark-stage); border-color: #1c1c1f; }
+
+.swatch-label {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.swatch.light .swatch-label { color: var(--muted); }
+.swatch.dark .swatch-label { color: rgba(255, 255, 255, 0.5); }
+
+.swatch-icon {
+  width: 96px;
+  height: 96px;
+}
+
+footer {
+  padding-top: 32px;
+  padding-bottom: 80px;
+  margin-top: 64px;
+  border-top: 1px solid var(--hairline);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: baseline;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.masthead, .direction {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: enter 0.9s cubic-bezier(0.2, 0.65, 0.2, 1) forwards;
+}
+
+.masthead { animation-delay: 0s; }
+.direction:nth-of-type(1) { animation-delay: 0.15s; }
+.direction:nth-of-type(2) { animation-delay: 0.3s; }
+.direction:nth-of-type(3) { animation-delay: 0.45s; }
+
+@keyframes enter {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.specimen, .swatch {
+  transition: transform 0.5s cubic-bezier(0.2, 0.65, 0.2, 1), border-color 0.4s;
+}
+.specimen:hover { transform: translateY(-2px); border-color: var(--muted); }
+.swatch:hover { transform: translateY(-2px); }
+
+@media (max-width: 880px) {
+  main, header.masthead, footer { padding: 0 28px; }
+  .specimens-grid, .swatches-row { grid-template-columns: 1fr; }
+  .direction-header { grid-template-columns: 1fr; gap: 8px; }
+  .direction-header .tag { padding-top: 0; }
+  .direction-header h2 { font-size: 48px; }
+  .rationale { margin-left: 0; }
+  .masthead .brand { font-size: 40px; }
+  .hero-icon { width: 240px; height: 240px; }
+  .wordmark { font-size: 44px; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute;pointer-events:none;" aria-hidden="true">
+  <defs>
+    <symbol id="d1-icon" viewBox="0 0 100 100">
+      <rect x="0" y="0" width="100" height="100" rx="22" fill="#F1ECDF"/>
+      <path d="M 22 32 Q 35 22 50 32 T 78 32" stroke="#D4A24C" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+      <path d="M 30 46 Q 40 39 50 46 T 70 46" stroke="#D4A24C" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+      <rect x="18" y="62" width="64" height="20" rx="10" fill="#0F0F12"/>
+      <rect x="26" y="68" width="28" height="2.2" rx="1.1" fill="#F1ECDF" opacity="0.94"/>
+      <rect x="26" y="73" width="40" height="2.2" rx="1.1" fill="#F1ECDF" opacity="0.94"/>
+      <rect x="26" y="78" width="20" height="2.2" rx="1.1" fill="#F1ECDF" opacity="0.94"/>
+    </symbol>
+
+    <symbol id="d2-icon" viewBox="0 0 100 100">
+      <rect x="0" y="0" width="100" height="100" rx="22" fill="#F4F1EB"/>
+      <path d="M 18 38 A 32 28 0 0 1 82 38" stroke="#C97863" stroke-width="2.5" fill="none" opacity="0.32" stroke-linecap="round"/>
+      <path d="M 26 41 A 24 22 0 0 1 74 41" stroke="#C97863" stroke-width="2.5" fill="none" opacity="0.55" stroke-linecap="round"/>
+      <path d="M 34 44 A 16 16 0 0 1 66 44" stroke="#C97863" stroke-width="2.5" fill="none" opacity="0.92" stroke-linecap="round"/>
+      <text x="50" y="86" font-family="'Manrope', sans-serif" font-weight="800" font-size="50"
+            text-anchor="middle" fill="#1B2330" letter-spacing="-1">m</text>
+    </symbol>
+
+    <symbol id="d3-icon" viewBox="0 0 100 100">
+      <rect x="0" y="0" width="100" height="100" rx="22" fill="#FAFAF7"/>
+      <circle cx="22" cy="50" r="5.5" fill="#2745CF"/>
+      <circle cx="36" cy="50" r="5.5" fill="#000000"/>
+      <circle cx="50" cy="50" r="5.5" fill="#000000"/>
+      <rect x="60" y="44.5" width="28" height="11" rx="5.5" fill="#000000"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="masthead">
+  <div class="brand">murmure</div>
+  <div class="meta">
+    <span class="label-line"><span class="key">Études de logo</span></span>
+    <span class="label-line">Trois directions · v1</span>
+    <span class="label-line">Avril 2026</span>
+  </div>
+</header>
+
+<main>
+
+<article class="direction d1">
+  <header class="direction-header">
+    <span class="tag">Direction 01</span>
+    <h2>Sous-titre &amp; onde</h2>
+  </header>
+  <p class="rationale">
+    Le sous-titre comme objet : une barre d'encre posée sous l'onde qu'elle accueille. La paire onde→barre se lit immédiatement comme <span class="key">« ce qui se dit, ce qui s'écrit »</span> — sans métaphore. Palette d'imprimerie : encre profonde, papier crème, ambre tempéré. Une référence calme aux sous-titres des décodeurs des années quatre-vingt-dix, sans pastiche rétro. Le wordmark en Public Sans, une référence au design des médias publics.
+  </p>
+
+  <div class="hero-stage" data-size="1024 × 1024">
+    <svg class="hero-icon" viewBox="0 0 100 100" aria-label="Direction 01 — icône principale"><use href="#d1-icon"/></svg>
+  </div>
+
+  <div class="specimens-grid">
+    <section class="specimen">
+      <span class="crop tl"></span><span class="crop tr"></span><span class="crop bl"></span><span class="crop br"></span>
+      <div class="label">Logotype horizontal</div>
+      <div class="lockup-row">
+        <svg class="icon" viewBox="0 0 100 100"><use href="#d1-icon"/></svg>
+        <span class="wordmark">murmure</span>
+      </div>
+    </section>
+
+    <section class="specimen">
+      <span class="crop tl"></span><span class="crop tr"></span><span class="crop bl"></span><span class="crop br"></span>
+      <div class="label">Tailles · 256 / 64 / 16 px</div>
+      <div class="sizes-row">
+        <div class="size-cell">
+          <svg width="128" height="128" viewBox="0 0 100 100"><use href="#d1-icon"/></svg>
+          <span class="size-label">256 (×½)</span>
+        </div>
+        <div class="size-cell">
+          <svg width="64" height="64" viewBox="0 0 100 100"><use href="#d1-icon"/></svg>
+          <span class="size-label">64 px</span>
+        </div>
+        <div class="size-cell">
+          <svg width="16" height="16" viewBox="0 0 100 100"><use href="#d1-icon"/></svg>
+          <span class="size-label">16 px</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="swatches-row">
+    <div class="swatch light">
+      <svg class="swatch-icon" viewBox="0 0 100 100"><use href="#d1-icon"/></svg>
+      <span class="swatch-label">Fond clair</span>
+    </div>
+    <div class="swatch dark">
+      <svg class="swatch-icon" viewBox="0 0 100 100"><use href="#d1-icon"/></svg>
+      <span class="swatch-label">Fond sombre</span>
+    </div>
+  </div>
+</article>
+
+<article class="direction d2">
+  <header class="direction-header">
+    <span class="tag">Direction 02</span>
+    <h2>Lettre &amp; halo</h2>
+  </header>
+  <p class="rationale">
+    La lettre devient signal. Un <span class="key">m</span>, fondement du nom, posé au centre — les arcs concentriques qui s'en échappent évoquent le son qui se déploie. La lettre-comme-icône fait du logotype et du marque-page un seul geste continu. Palette plus chaude — papier et corail tamisé sur fond crème — pour donner à l'outil un caractère éditorial plus que technique. Le wordmark en Manrope, géométrique et tempéré.
+  </p>
+
+  <div class="hero-stage" data-size="1024 × 1024">
+    <svg class="hero-icon" viewBox="0 0 100 100" aria-label="Direction 02 — icône principale"><use href="#d2-icon"/></svg>
+  </div>
+
+  <div class="specimens-grid">
+    <section class="specimen">
+      <span class="crop tl"></span><span class="crop tr"></span><span class="crop bl"></span><span class="crop br"></span>
+      <div class="label">Logotype horizontal</div>
+      <div class="lockup-row">
+        <svg class="icon" viewBox="0 0 100 100"><use href="#d2-icon"/></svg>
+        <span class="wordmark">murmure</span>
+      </div>
+    </section>
+
+    <section class="specimen">
+      <span class="crop tl"></span><span class="crop tr"></span><span class="crop bl"></span><span class="crop br"></span>
+      <div class="label">Tailles · 256 / 64 / 16 px</div>
+      <div class="sizes-row">
+        <div class="size-cell">
+          <svg width="128" height="128" viewBox="0 0 100 100"><use href="#d2-icon"/></svg>
+          <span class="size-label">256 (×½)</span>
+        </div>
+        <div class="size-cell">
+          <svg width="64" height="64" viewBox="0 0 100 100"><use href="#d2-icon"/></svg>
+          <span class="size-label">64 px</span>
+        </div>
+        <div class="size-cell">
+          <svg width="16" height="16" viewBox="0 0 100 100"><use href="#d2-icon"/></svg>
+          <span class="size-label">16 px</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="swatches-row">
+    <div class="swatch light">
+      <svg class="swatch-icon" viewBox="0 0 100 100"><use href="#d2-icon"/></svg>
+      <span class="swatch-label">Fond clair</span>
+    </div>
+    <div class="swatch dark">
+      <svg class="swatch-icon" viewBox="0 0 100 100"><use href="#d2-icon"/></svg>
+      <span class="swatch-label">Fond sombre</span>
+    </div>
+  </div>
+</article>
+
+<article class="direction d3">
+  <header class="direction-header">
+    <span class="tag">Direction 03</span>
+    <h2>Du point au trait</h2>
+  </header>
+  <p class="rationale">
+    Trois points, puis le trait. La transcription en une phrase visuelle : <span class="key">le bruit dispersé devient parole continue</span>. Le point de gauche, en indigo, emprunte exactement la couleur que l'application utilise pour les transcriptions partielles en direct — refermant la boucle entre identité et interface. Tout le reste : encre noire sur os blanc. Le geste le plus minimal des trois ; le plus exigeant sur la justesse des proportions.
+  </p>
+
+  <div class="hero-stage" data-size="1024 × 1024">
+    <svg class="hero-icon" viewBox="0 0 100 100" aria-label="Direction 03 — icône principale"><use href="#d3-icon"/></svg>
+  </div>
+
+  <div class="specimens-grid">
+    <section class="specimen">
+      <span class="crop tl"></span><span class="crop tr"></span><span class="crop bl"></span><span class="crop br"></span>
+      <div class="label">Logotype horizontal</div>
+      <div class="lockup-row">
+        <svg class="icon" viewBox="0 0 100 100"><use href="#d3-icon"/></svg>
+        <span class="wordmark">murmure</span>
+      </div>
+    </section>
+
+    <section class="specimen">
+      <span class="crop tl"></span><span class="crop tr"></span><span class="crop bl"></span><span class="crop br"></span>
+      <div class="label">Tailles · 256 / 64 / 16 px</div>
+      <div class="sizes-row">
+        <div class="size-cell">
+          <svg width="128" height="128" viewBox="0 0 100 100"><use href="#d3-icon"/></svg>
+          <span class="size-label">256 (×½)</span>
+        </div>
+        <div class="size-cell">
+          <svg width="64" height="64" viewBox="0 0 100 100"><use href="#d3-icon"/></svg>
+          <span class="size-label">64 px</span>
+        </div>
+        <div class="size-cell">
+          <svg width="16" height="16" viewBox="0 0 100 100"><use href="#d3-icon"/></svg>
+          <span class="size-label">16 px</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="swatches-row">
+    <div class="swatch light">
+      <svg class="swatch-icon" viewBox="0 0 100 100"><use href="#d3-icon"/></svg>
+      <span class="swatch-label">Fond clair</span>
+    </div>
+    <div class="swatch dark">
+      <svg class="swatch-icon" viewBox="0 0 100 100"><use href="#d3-icon"/></svg>
+      <span class="swatch-label">Fond sombre</span>
+    </div>
+  </div>
+</article>
+
+</main>
+
+<footer>
+  <div>Document de revue · projet murmure · accessibilité audio</div>
+  <div>Trois directions · 4 / 4</div>
+</footer>
+
+</body>
+</html>

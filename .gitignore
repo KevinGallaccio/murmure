@@ -1,0 +1,19 @@
+node_modules/
+out/
+dist-electron/
+.vite/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs and env
+*.log
+.env
+.env.*
+!.env.example
+
+# electron-builder cache
+.cache/

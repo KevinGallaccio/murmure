@@ -1,0 +1,36 @@
+appId: app.murmure
+productName: murmure
+directories:
+  output: dist-electron
+  buildResources: resources
+files:
+  - out/**
+  - resources/**
+  - package.json
+asar: true
+mac:
+  target:
+    - target: dmg
+      arch:
+        - universal
+  category: public.app-category.utilities
+  icon: resources/icon.icns
+  extendInfo:
+    NSMicrophoneUsageDescription: >-
+      murmure a besoin du microphone pour transcrire l'audio en direct.
+    NSCameraUsageDescription: >-
+      murmure n'utilise pas la caméra.
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDir: true
+publish:
+  provider: github
+  owner: KevinGallaccio
+  repo: murmure
+  releaseType: release

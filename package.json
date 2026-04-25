@@ -1,0 +1,46 @@
+{
+  "name": "murmure",
+  "version": "1.0.0",
+  "description": "Live transcription display for hearing-impaired audiences at podcast festivals — on rend le murmure visible.",
+  "main": "out/main/index.js",
+  "author": {
+    "name": "Kevin Gallaccio",
+    "url": "https://github.com/KevinGallaccio"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/KevinGallaccio/murmure#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KevinGallaccio/murmure.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KevinGallaccio/murmure/issues"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "tsc --noEmit && electron-vite build",
+    "start": "electron-vite preview",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/ws": "^8.5.13",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  }
+}

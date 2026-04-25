@@ -15,6 +15,9 @@ mac:
         - universal
   category: public.app-category.utilities
   icon: resources/icon.icns
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     NSMicrophoneUsageDescription: >-
       murmure a besoin du microphone pour transcrire l'audio en direct.

@@ -41,7 +41,24 @@ If you're running a small French-language event and you'd like to make it access
 
 Pre-built installers are published on the [Releases page](https://github.com/KevinGallaccio/murmure/releases) — grab the `.dmg` for macOS or `.exe` for Windows.
 
-The first time you open an unsigned `.dmg`, macOS Gatekeeper will refuse with *"developer cannot be verified."* Right-click the app → **Open** → confirm in the dialog; subsequent launches work normally. The same applies to Windows SmartScreen (More info → Run anyway). For paid signing/notarization, see the [electron-builder docs](https://www.electron.build/code-signing.html).
+The first time you open an unsigned `.dmg`, macOS Gatekeeper will refuse with *"developer cannot be verified."* Right-click the app → **Open** → confirm in the dialog; subsequent launches work normally. The same applies to Windows SmartScreen (More info → Run anyway).
+
+### macOS first-launch quirks
+
+murmure isn't signed with an Apple Developer ID (yet — see below), which makes macOS treat it with extra suspicion. You may bump into one or both of these on first install:
+
+**The mic prompt re-appears even after clicking Allow.** macOS's TCC (the privacy framework) uses an app's signature as part of its identity. Because we're ad-hoc signed and not notarized, TCC sometimes can't reliably remember the grant. Workaround:
+
+```bash
+# Wipe murmure's TCC entry so macOS treats the next launch as a clean first run
+tccutil reset Microphone app.murmure
+```
+
+Then launch the app, click **Allow** on the mic prompt, and grant access in **System Settings → Privacy & Security → Microphone** if prompted again. After macOS commits the grant (it sometimes takes two or three clicks under Sequoia), the prompt is gone for good — you should be able to quit and relaunch with no further dialogs.
+
+**The icon shows as a generic placeholder in System Settings.** macOS caches app icons aggressively. After the first install, run `killall Finder Dock` to refresh; the murmure logo will show up correctly on the next opening.
+
+These rough edges go away once the app is properly signed with a paid Apple Developer ID + notarized. That's on the roadmap; until then, the workarounds above are the path.
 
 ---
 

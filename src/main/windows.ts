@@ -52,8 +52,6 @@ export function createDisplayWindow(display: Display | null): BrowserWindow {
     y: bounds.y,
     width: bounds.width,
     height: bounds.height,
-    frame: false,
-    titleBarStyle: 'hidden',
     fullscreenable: true,
     backgroundColor: '#000000',
     show: false,

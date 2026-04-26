@@ -5,16 +5,8 @@ import {
   FORCE_ENDPOINT_MS,
   RECONNECT_BACKOFF_MS,
 } from '../shared/constants';
-import type { StreamErrorPayload, StreamState, TranscriptFinal, TranscriptPartial } from '../shared/ipc';
-
-export type AssemblyAIClientCallbacks = {
-  onStateChange: (state: StreamState) => void;
-  onPartial: (payload: TranscriptPartial) => void;
-  onFinal: (payload: TranscriptFinal) => void;
-  onError: (payload: StreamErrorPayload) => void;
-  onSessionBegin: () => void;
-  onSessionEnd: (sessionDurationSeconds: number) => void;
-};
+import type { StreamState } from '../shared/ipc';
+import type { STTClient, STTClientCallbacks } from './stt-client';
 
 type AssemblyEvent =
   | { type: 'Begin'; id: string; expires_at: number }
@@ -23,7 +15,7 @@ type AssemblyEvent =
   | { type: 'Error'; error?: string; code?: string }
   | { type: string; [key: string]: unknown };
 
-export class AssemblyAIClient {
+export class AssemblyAIClient implements STTClient {
   private ws: WebSocket | null = null;
   private state: StreamState = 'idle';
   private reconnectAttempt = 0;
@@ -32,7 +24,7 @@ export class AssemblyAIClient {
   private currentTurnText = '';
   private forceEndpointTimer: NodeJS.Timeout | null = null;
 
-  constructor(private readonly cb: AssemblyAIClientCallbacks) {}
+  constructor(private readonly cb: STTClientCallbacks) {}
 
   getState(): StreamState {
     return this.state;

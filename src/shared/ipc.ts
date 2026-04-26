@@ -23,11 +23,20 @@ export type DisplayInfo = {
   bounds: { x: number; y: number; width: number; height: number };
 };
 
+export type Provider = 'assemblyai' | 'speechmatics';
+
+export type ProviderState = { provider: Provider };
+
 export type ApiKeyStatus = { hasKey: boolean };
 
 export type ApiKeyTestResult = { ok: boolean; error?: string };
 
 export const IPC = {
+  ProviderGet: 'provider:get',
+  ProviderSet: 'provider:set',
+  ProviderChanged: 'provider:changed',
+  ProviderOpenSignup: 'provider:open-signup',
+
   ApiKeySave: 'apikey:save',
   ApiKeyTest: 'apikey:test',
   ApiKeyClear: 'apikey:clear',

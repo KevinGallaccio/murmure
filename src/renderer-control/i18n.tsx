@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { LanguageChoice, ResolvedLocale } from '../shared/ipc';
+import type { LanguageChoice, Provider, ResolvedLocale } from '../shared/ipc';
 
 export type Locale = ResolvedLocale;
 
@@ -97,9 +97,14 @@ export type Messages = {
     languageEnglish: string;
     languageFrench: string;
     languageAuto: string;
-    keyTitle: string;
-    keySub: string;
-    keyPlaceholder: string;
+    providerTitle: string;
+    providerSub: string;
+    providerAssembly: string;
+    providerSpeechmatics: string;
+    keyTitle: Record<Provider, string>;
+    keySub: Record<Provider, string>;
+    keyPlaceholder: Record<Provider, string>;
+    keyGetAccount: Record<Provider, string>;
     save: string;
     test: string;
     testing: string;
@@ -175,7 +180,7 @@ const fr: Messages = {
     monitorIdle: 'aperçu',
     monitorLive: 'en direct',
     setupNeededTitle: 'Configuration en une fois',
-    setupNeededBody: "Il vous faut une clé AssemblyAI et un microphone avant de diffuser. Configurez-les dans l'onglet ",
+    setupNeededBody: "Il vous faut une clé d'API et un microphone avant de diffuser. Configurez-les dans l'onglet ",
     setupNeededLink: 'Réglages',
   },
   appearance: {
@@ -236,15 +241,33 @@ const fr: Messages = {
     titleA: 'Configuration ',
     titleEm: 'unique',
     titleB: '.',
-    sub: 'Collez votre clé AssemblyAI, choisissez un microphone, surveillez les coûts. Tout reste sur cette machine.',
+    sub: "Choisissez un fournisseur de transcription, collez votre clé, sélectionnez un microphone. Tout reste sur cette machine.",
     languageTitle: "Langue de l'interface",
     languageSub: "Interface opérateur uniquement. La langue de transcription se règle dans shared/constants.ts.",
     languageEnglish: 'English',
     languageFrench: 'Français',
     languageAuto: 'Auto · langue du système',
-    keyTitle: 'Clé AssemblyAI',
-    keySub: "Chiffrée au repos dans le trousseau du système. Envoyée uniquement à AssemblyAI.",
-    keyPlaceholder: 'Coller votre clé AssemblyAI ici…',
+    providerTitle: 'Fournisseur de transcription',
+    providerSub:
+      "Speechmatics excelle sur la parole continue (interviews en direct, débats sans pauses) et offre 480 minutes gratuites par mois. AssemblyAI reste disponible comme alternative.",
+    providerAssembly: 'AssemblyAI',
+    providerSpeechmatics: 'Speechmatics',
+    keyTitle: {
+      assemblyai: 'Clé AssemblyAI',
+      speechmatics: 'Clé Speechmatics',
+    },
+    keySub: {
+      assemblyai: "Chiffrée au repos dans le trousseau du système. Envoyée uniquement à AssemblyAI.",
+      speechmatics: "Chiffrée au repos dans le trousseau du système. Envoyée uniquement à Speechmatics.",
+    },
+    keyPlaceholder: {
+      assemblyai: 'Coller votre clé AssemblyAI ici…',
+      speechmatics: 'Coller votre clé Speechmatics ici…',
+    },
+    keyGetAccount: {
+      assemblyai: 'Pas encore de compte AssemblyAI ?',
+      speechmatics: 'Pas encore de compte Speechmatics ?',
+    },
     save: 'Enregistrer',
     test: 'Tester',
     testing: 'Vérification…',
@@ -323,7 +346,7 @@ const en: Messages = {
     monitorIdle: 'idle preview',
     monitorLive: 'mirroring · live',
     setupNeededTitle: 'One-time setup',
-    setupNeededBody: "You'll need an AssemblyAI key and a microphone before broadcasting. Set them up under ",
+    setupNeededBody: "You'll need an API key and a microphone before broadcasting. Set them up under ",
     setupNeededLink: 'Setup',
   },
   appearance: {
@@ -384,15 +407,33 @@ const en: Messages = {
     titleA: 'One-time ',
     titleEm: 'configuration',
     titleB: '.',
-    sub: 'Paste your AssemblyAI key, pick a microphone, keep an eye on cost. Set it once and forget it — everything stays on this machine.',
+    sub: 'Pick a transcription provider, paste your key, choose a microphone. Everything stays on this machine.',
     languageTitle: 'Interface language',
     languageSub: 'Operator UI only. Transcription language is set separately in shared/constants.ts.',
     languageEnglish: 'English',
     languageFrench: 'Français',
     languageAuto: 'Auto · OS',
-    keyTitle: 'AssemblyAI key',
-    keySub: 'Encrypted at rest in your OS Keychain. Never sent anywhere except AssemblyAI.',
-    keyPlaceholder: 'Paste your AssemblyAI key here…',
+    providerTitle: 'Transcription provider',
+    providerSub:
+      'Speechmatics excels at continuous speech (live interviews, debates without pauses) and offers 480 free minutes per month. AssemblyAI is kept as an alternative.',
+    providerAssembly: 'AssemblyAI',
+    providerSpeechmatics: 'Speechmatics',
+    keyTitle: {
+      assemblyai: 'AssemblyAI key',
+      speechmatics: 'Speechmatics key',
+    },
+    keySub: {
+      assemblyai: 'Encrypted at rest in your OS Keychain. Never sent anywhere except AssemblyAI.',
+      speechmatics: 'Encrypted at rest in your OS Keychain. Never sent anywhere except Speechmatics.',
+    },
+    keyPlaceholder: {
+      assemblyai: 'Paste your AssemblyAI key here…',
+      speechmatics: 'Paste your Speechmatics key here…',
+    },
+    keyGetAccount: {
+      assemblyai: "Don't have an AssemblyAI account?",
+      speechmatics: "Don't have a Speechmatics account?",
+    },
     save: 'Save',
     test: 'Test',
     testing: 'Verifying…',

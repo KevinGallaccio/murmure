@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import type { LanguageChoice, UsageUpdate } from '../../shared/ipc';
+import type { LanguageChoice, Provider, UsageUpdate } from '../../shared/ipc';
 import { useT } from '../i18n';
 import { IconCheck, IconExternal, IconEye, IconEyeOff, IconRefresh } from './Icons';
 
@@ -11,6 +11,8 @@ type ApiKeyStatus = 'unknown' | 'absent' | 'saved' | 'verified' | 'invalid';
 type Props = {
   language: LanguageChoice;
   setLanguage: (l: LanguageChoice) => void;
+  provider: Provider;
+  setProvider: (p: Provider) => void;
   usage: UsageUpdate | null;
   rms: number;
   selectedDeviceId: string | null;
@@ -27,6 +29,8 @@ type Props = {
 export function SetupPage({
   language,
   setLanguage,
+  provider,
+  setProvider,
   usage,
   rms,
   selectedDeviceId,
@@ -86,14 +90,53 @@ export function SetupPage({
           </div>
         </div>
 
-        {/* AssemblyAI key */}
+        {/* Provider */}
+        <div className="card full">
+          <div className="setup-row">
+            <div>
+              <h3 className="card-title">{t.setup.providerTitle}</h3>
+              <p className="card-sub" style={{ margin: 0, maxWidth: 520 }}>
+                {t.setup.providerSub}
+              </p>
+            </div>
+            <div className="right">
+              <div className="seg">
+                {(
+                  [
+                    { v: 'speechmatics' as const, label: t.setup.providerSpeechmatics },
+                    { v: 'assemblyai' as const, label: t.setup.providerAssembly },
+                  ]
+                ).map((o) => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    className={provider === o.v ? 'active' : ''}
+                    onClick={() => setProvider(o.v)}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* API key (per provider) */}
         <div className="card full">
           <div className="setup-row top">
             <div>
-              <h3 className="card-title">{t.setup.keyTitle}</h3>
-              <p className="card-sub">{t.setup.keySub}</p>
+              <h3 className="card-title">{t.setup.keyTitle[provider]}</h3>
+              <p className="card-sub">{t.setup.keySub[provider]}</p>
+              <button
+                type="button"
+                className="link-row"
+                onClick={() => void window.diffuseur.provider.openSignup(provider)}
+              >
+                {t.setup.keyGetAccount[provider]}
+                <IconExternal size={11} />
+              </button>
             </div>
-            <ApiKeyForm onStatusChange={onApiKeyStatusChange} />
+            <ApiKeyForm provider={provider} onStatusChange={onApiKeyStatusChange} />
           </div>
         </div>
 
@@ -180,8 +223,10 @@ function Field({
 }
 
 function ApiKeyForm({
+  provider,
   onStatusChange,
 }: {
+  provider: Provider;
   onStatusChange: (status: ApiKeyStatus) => void;
 }): JSX.Element {
   const t = useT();
@@ -193,12 +238,16 @@ function ApiKeyForm({
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
 
+  // Re-fetch status whenever the operator switches provider so the form
+  // reflects the right key (or its absence) without a stale carry-over.
   useEffect(() => {
-    void window.diffuseur.apikey.status().then((r) => {
+    setDraft('');
+    setErrorMessage(null);
+    void window.diffuseur.apikey.status(provider).then((r) => {
       setHasKey(r.hasKey);
       setStatus(r.hasKey ? 'saved' : 'absent');
     });
-  }, []);
+  }, [provider]);
 
   useEffect(() => {
     onStatusChange(status);
@@ -209,7 +258,7 @@ function ApiKeyForm({
     setSaving(true);
     setErrorMessage(null);
     try {
-      const r = await window.diffuseur.apikey.save(draft.trim());
+      const r = await window.diffuseur.apikey.save(provider, draft.trim());
       setHasKey(r.hasKey);
       setStatus('saved');
       setDraft('');
@@ -223,7 +272,7 @@ function ApiKeyForm({
   async function clear(): Promise<void> {
     setSaving(true);
     setErrorMessage(null);
-    const r = await window.diffuseur.apikey.clear();
+    const r = await window.diffuseur.apikey.clear(provider);
     setHasKey(r.hasKey);
     setStatus('absent');
     setSaving(false);
@@ -232,7 +281,7 @@ function ApiKeyForm({
   async function test(): Promise<void> {
     setTesting(true);
     setErrorMessage(null);
-    const r = await window.diffuseur.apikey.test();
+    const r = await window.diffuseur.apikey.test(provider);
     if (r.ok) setStatus('verified');
     else {
       setStatus('invalid');
@@ -248,7 +297,7 @@ function ApiKeyForm({
           <input
             className="input mono"
             type={showKey ? 'text' : 'password'}
-            placeholder={t.setup.keyPlaceholder}
+            placeholder={t.setup.keyPlaceholder[provider]}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
           />

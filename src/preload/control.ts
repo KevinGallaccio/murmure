@@ -7,6 +7,8 @@ import type {
   LanguageChoice,
   LanguageState,
   MockState,
+  Provider,
+  ProviderState,
   StreamErrorPayload,
   StreamState,
   StyleUpdate,
@@ -28,11 +30,23 @@ function subscribe<T>(channel: string, listener: (payload: T) => void): Unsubscr
 }
 
 const api = {
+  provider: {
+    get: (): Promise<ProviderState> => ipcRenderer.invoke(IPC.ProviderGet),
+    set: (provider: Provider): Promise<ProviderState> =>
+      ipcRenderer.invoke(IPC.ProviderSet, { provider }),
+    onChange: (cb: (s: ProviderState) => void) => subscribe<ProviderState>(IPC.ProviderChanged, cb),
+    openSignup: (provider: Provider): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC.ProviderOpenSignup, { provider }),
+  },
   apikey: {
-    status: (): Promise<ApiKeyStatus> => ipcRenderer.invoke(IPC.ApiKeyStatus),
-    save: (plaintext: string): Promise<ApiKeyStatus> => ipcRenderer.invoke(IPC.ApiKeySave, { plaintext }),
-    clear: (): Promise<ApiKeyStatus> => ipcRenderer.invoke(IPC.ApiKeyClear),
-    test: (): Promise<ApiKeyTestResult> => ipcRenderer.invoke(IPC.ApiKeyTest),
+    status: (provider: Provider): Promise<ApiKeyStatus> =>
+      ipcRenderer.invoke(IPC.ApiKeyStatus, { provider }),
+    save: (provider: Provider, plaintext: string): Promise<ApiKeyStatus> =>
+      ipcRenderer.invoke(IPC.ApiKeySave, { provider, plaintext }),
+    clear: (provider: Provider): Promise<ApiKeyStatus> =>
+      ipcRenderer.invoke(IPC.ApiKeyClear, { provider }),
+    test: (provider: Provider): Promise<ApiKeyTestResult> =>
+      ipcRenderer.invoke(IPC.ApiKeyTest, { provider }),
   },
   stream: {
     start: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke(IPC.StreamStart),

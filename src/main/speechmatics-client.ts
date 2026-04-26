@@ -33,9 +33,13 @@ export class SpeechmaticsClient implements STTClient {
   // Speechmatics' AudioAdded.seq_no follows our send order starting at 1.
   private audioSeqNo = 0;
   private finalCount = 0;
+  private partialCount = 0;
   private partialTurnId = '';
   private sessionStartedAt = 0;
   private closeGraceTimer: NodeJS.Timeout | null = null;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
+  private firstPartialLogged = false;
+  private firstFinalLogged = false;
   // Once true, sendAudio is a no-op until the next connect(). We flip this
   // the moment we send EndOfStream so that the renderer's in-flight chunks
   // (which can keep arriving for a few ms while state propagation catches
@@ -205,7 +209,9 @@ export class SpeechmaticsClient implements STTClient {
 
     ws.on('open', () => {
       try {
-        ws.send(JSON.stringify(buildStartRecognition()));
+        const msg = buildStartRecognition();
+        console.info('[murmure] Speechmatics → StartRecognition', JSON.stringify(msg));
+        ws.send(JSON.stringify(msg));
       } catch (err) {
         this.cb.onError({ message: (err as Error).message ?? "Échec d'envoi." });
         this.transitionTo('error');
@@ -281,6 +287,11 @@ export class SpeechmaticsClient implements STTClient {
         this.reconnectAttempt = 0;
         this.sessionStartedAt = Date.now();
         this.partialTurnId = `t-${Date.now()}`;
+        this.partialCount = 0;
+        this.finalCount = 0;
+        this.firstPartialLogged = false;
+        this.firstFinalLogged = false;
+        this.startHeartbeat();
         this.transitionTo('streaming');
         this.cb.onSessionBegin();
         break;
@@ -293,18 +304,30 @@ export class SpeechmaticsClient implements STTClient {
         break;
       }
       case 'AddPartialTranscript': {
+        this.partialCount += 1;
         const text = (ev as { transcript?: string }).transcript ?? '';
+        if (!this.firstPartialLogged) {
+          this.firstPartialLogged = true;
+          console.info('[murmure] Speechmatics ← first AddPartialTranscript:', JSON.stringify(ev));
+        } else {
+          const meta = (ev as { metadata?: { start_time?: number; end_time?: number } }).metadata;
+          console.info(
+            `[murmure] Speechmatics partial #${this.partialCount} [${meta?.start_time?.toFixed(2) ?? '?'}-${meta?.end_time?.toFixed(2) ?? '?'}s] "${text.length > 60 ? text.slice(0, 60) + '…' : text}" (len=${text.length})`,
+          );
+        }
         if (!text) break;
-        console.info(
-          `[murmure] Speechmatics partial: "${text.length > 60 ? text.slice(0, 60) + '…' : text}"`,
-        );
         this.cb.onPartial({ text, turnId: this.partialTurnId });
         break;
       }
       case 'AddTranscript': {
         const text = (ev as { transcript?: string }).transcript ?? '';
+        if (!this.firstFinalLogged) {
+          this.firstFinalLogged = true;
+          console.info('[murmure] Speechmatics ← first AddTranscript:', JSON.stringify(ev));
+        } else {
+          console.info(`[murmure] Speechmatics final: "${text}" (len=${text.length})`);
+        }
         if (!text.trim()) break;
-        console.info(`[murmure] Speechmatics final: "${text}"`);
         this.finalCount += 1;
         const turnId = `f-${this.finalCount}`;
         this.cb.onFinal({ text, turnId, timestamp: Date.now() });
@@ -352,6 +375,7 @@ export class SpeechmaticsClient implements STTClient {
   private transitionTo(next: StreamState): void {
     if (this.state === next) return;
     this.state = next;
+    if (next !== 'streaming') this.stopHeartbeat();
     this.cb.onStateChange(next);
   }
 
@@ -359,6 +383,22 @@ export class SpeechmaticsClient implements STTClient {
     if (this.closeGraceTimer) {
       clearTimeout(this.closeGraceTimer);
       this.closeGraceTimer = null;
+    }
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      console.info(
+        `[murmure] Speechmatics heartbeat: sent=${this.audioSeqNo} chunks, partials=${this.partialCount}, finals=${this.finalCount}`,
+      );
+    }, 5000);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
     }
   }
 }

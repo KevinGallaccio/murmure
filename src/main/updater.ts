@@ -1,5 +1,6 @@
 import { autoUpdater, type UpdateCheckResult, type UpdateInfo } from 'electron-updater';
 import { BrowserWindow, dialog, app, shell, type MessageBoxOptions } from 'electron';
+import { IPC } from '../shared/ipc';
 
 // In-place auto-install on macOS requires the app to be signed with an Apple
 // Developer ID. Squirrel.framework (used by electron-updater on macOS) verifies
@@ -110,11 +111,20 @@ type UpdateListener = (status: UpdateStatus) => void;
 let currentStatus: UpdateStatus = { type: 'idle' };
 const listeners: Set<UpdateListener> = new Set();
 let updaterInitialized = false;
-let downloadPromptInitialized = false;
+let getStatusBroadcastWindow: (() => BrowserWindow | null) | null = null;
 
 function setStatus(status: UpdateStatus): void {
   currentStatus = status;
   listeners.forEach((listener) => listener(status));
+  // Push the new state to the renderer so the in-app banner can react.
+  const win = getStatusBroadcastWindow?.();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send(IPC.UpdateStatusChanged, status);
+  }
+}
+
+export function bindUpdateStatusBroadcast(getWindow: () => BrowserWindow | null): void {
+  getStatusBroadcastWindow = getWindow;
 }
 
 async function showDialog(
@@ -191,6 +201,37 @@ export function getUpdateStatus(): UpdateStatus {
 export function onUpdateStatus(listener: UpdateListener): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+// Quietly check for updates a few seconds after launch. The result lands
+// in the renderer through setStatus → IPC.UpdateStatusChanged, which
+// drives the sidebar banner. Errors are swallowed; a failed background
+// check should never bother the user (they can still trigger an
+// interactive check from the menu).
+const AUTO_CHECK_DELAY_MS = 5000;
+
+export function scheduleAutoCheck(): void {
+  setTimeout(() => {
+    void autoUpdater.checkForUpdates().catch(() => {
+      // ignore — silent failure for background check
+    });
+  }, AUTO_CHECK_DELAY_MS);
+}
+
+export function openReleasesPage(): void {
+  void shell.openExternal(RELEASES_URL);
+}
+
+// Triggered from the renderer banner when the user clicks "Download &
+// install". autoUpdater drives status events that propagate back to the
+// banner via setStatus → IPC.UpdateStatusChanged.
+export async function requestDownload(): Promise<void> {
+  try {
+    await autoUpdater.downloadUpdate();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : tr().unknownError;
+    setStatus({ type: 'error', message });
+  }
 }
 
 export async function checkForUpdatesInteractive(parentWindow: BrowserWindow | null): Promise<void> {
@@ -271,48 +312,13 @@ export async function checkForUpdatesInteractive(parentWindow: BrowserWindow | n
   }
 }
 
-export function setupUpdateDownloadedPrompt(getWindow: () => BrowserWindow | null): void {
-  // Ensure we only register the prompt handler once
-  if (downloadPromptInitialized) return;
-  downloadPromptInitialized = true;
+// Triggered by the renderer banner once a download has finished. Replaces
+// the old auto-firing system modal — the banner is the user's signal that
+// the update is ready, and clicking "Restart now" routes here.
+export function installNow(): void {
+  autoUpdater.quitAndInstall(false, true);
+}
 
-  autoUpdater.on('update-downloaded', async (info: UpdateInfo) => {
-    const s = tr();
-    // On unsigned macOS builds the swap-on-restart will silently fail and
-    // relaunch the old version. Don't pretend it works — point at GitHub
-    // instead. (Belt-and-suspenders: the interactive check already short-
-    // circuits before downloading, but if anything else triggers a download
-    // this guard keeps the broken UX out of users' way.)
-    if (shouldUseManualMacFlow()) {
-      const parentWindow = getWindow();
-      const response = await showDialog(parentWindow, {
-        type: 'info',
-        title: s.updateReady,
-        message: s.versionDownloaded(info.version),
-        detail: s.macInstallReadyDetail,
-        buttons: [s.openGithub, s.later],
-        defaultId: 0,
-        cancelId: 1,
-      });
-      if (response.response === 0) {
-        await shell.openExternal(RELEASES_URL);
-      }
-      return;
-    }
-
-    const parentWindow = getWindow();
-    const response = await showDialog(parentWindow, {
-      type: 'info',
-      title: s.updateReady,
-      message: s.versionDownloaded(info.version),
-      detail: s.restartToApply,
-      buttons: [s.restartNow, s.later],
-      defaultId: 0,
-      cancelId: 1,
-    });
-
-    if (response.response === 0) {
-      autoUpdater.quitAndInstall(false, true);
-    }
-  });
+export function shouldOpenReleasesInsteadOfInstall(): boolean {
+  return shouldUseManualMacFlow();
 }

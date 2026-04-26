@@ -18,6 +18,7 @@ import type {
   TranscriptPartial,
   TranscriptionLanguage,
   TranscriptionLanguageState,
+  UpdateStatus,
   UsageUpdate,
 } from '../shared/ipc';
 import { IPC } from '../shared/ipc';
@@ -109,6 +110,17 @@ const api = {
   },
   tab: {
     onNavigate: (cb: (t: Tab) => void) => subscribe<Tab>(IPC.TabNavigate, cb),
+  },
+  app: {
+    getVersion: (): Promise<string> => ipcRenderer.invoke(IPC.AppVersionGet),
+  },
+  update: {
+    get: (): Promise<UpdateStatus> => ipcRenderer.invoke(IPC.UpdateStatusGet),
+    onStatus: (cb: (s: UpdateStatus) => void) =>
+      subscribe<UpdateStatus>(IPC.UpdateStatusChanged, cb),
+    download: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.UpdateDownload),
+    install: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.UpdateInstall),
+    openReleases: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.UpdateOpenReleases),
   },
 };
 

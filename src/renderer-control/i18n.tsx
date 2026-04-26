@@ -144,6 +144,21 @@ export type Messages = {
   toast: { newScreen: string; screenLost: string };
   languagePill: { tooltip: string };
   themeToggle: { tooltip: string };
+  update: {
+    availableTitle: string;
+    availableBody: (version: string) => string;
+    viewReleaseNotes: string;
+    downloadInstall: string;
+    downloadingTitle: string;
+    downloadingBody: (percent: number) => string;
+    readyTitle: string;
+    readyBody: string;
+    restartNow: string;
+    dismiss: string;
+    failedTitle: string;
+    failedBody: string;
+    retry: string;
+  };
 };
 
 const fr: Messages = {
@@ -315,6 +330,21 @@ const fr: Messages = {
   },
   languagePill: { tooltip: 'Changer de langue' },
   themeToggle: { tooltip: 'Changer le thème' },
+  update: {
+    availableTitle: 'Mise à jour disponible',
+    availableBody: (v) => `murmure ${v} est disponible !`,
+    viewReleaseNotes: 'Voir sur GitHub',
+    downloadInstall: 'Télécharger',
+    downloadingTitle: 'Téléchargement…',
+    downloadingBody: (p) => `${Math.round(p)} %`,
+    readyTitle: 'Prête à installer',
+    readyBody: 'Redémarrez pour appliquer la nouvelle version.',
+    restartNow: 'Redémarrer',
+    dismiss: 'Ignorer',
+    failedTitle: 'Échec de la mise à jour',
+    failedBody: 'Réessayez dans un instant.',
+    retry: 'Réessayer',
+  },
 };
 
 const en: Messages = {
@@ -486,6 +516,21 @@ const en: Messages = {
   },
   languagePill: { tooltip: 'Switch language' },
   themeToggle: { tooltip: 'Switch theme' },
+  update: {
+    availableTitle: 'Update available',
+    availableBody: (v) => `murmure ${v} is now live!`,
+    viewReleaseNotes: 'View on GitHub',
+    downloadInstall: 'Download',
+    downloadingTitle: 'Downloading…',
+    downloadingBody: (p) => `${Math.round(p)}%`,
+    readyTitle: 'Ready to install',
+    readyBody: 'Restart to apply the new version.',
+    restartNow: 'Restart',
+    dismiss: 'Dismiss',
+    failedTitle: 'Update failed',
+    failedBody: 'Try again in a moment.',
+    retry: 'Retry',
+  },
 };
 
 const dictionaries: Record<Locale, Messages> = { fr, en };

@@ -36,6 +36,12 @@ export class SpeechmaticsClient implements STTClient {
   private partialTurnId = '';
   private sessionStartedAt = 0;
   private closeGraceTimer: NodeJS.Timeout | null = null;
+  // Once true, sendAudio is a no-op until the next connect(). We flip this
+  // the moment we send EndOfStream so that the renderer's in-flight chunks
+  // (which can keep arriving for a few ms while state propagation catches
+  // up) don't reach the server post-EOS — Speechmatics replies with an
+  // `add_audio_after_eos` warning and discards them anyway.
+  private audioSendBlocked = false;
 
   constructor(private readonly cb: STTClientCallbacks) {}
 
@@ -51,6 +57,9 @@ export class SpeechmaticsClient implements STTClient {
 
   stop(): void {
     this.explicitlyStopped = true;
+    // Block any further audio chunks from reaching the wire BEFORE we send
+    // EndOfStream — otherwise the server complains with add_audio_after_eos.
+    this.audioSendBlocked = true;
     this.clearCloseGrace();
     if (this.ws) {
       // Ask Speechmatics to flush remaining transcript before disconnect.
@@ -75,6 +84,7 @@ export class SpeechmaticsClient implements STTClient {
   }
 
   sendAudio(buffer: ArrayBuffer): void {
+    if (this.audioSendBlocked) return;
     if (this.state !== 'streaming' || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     if (this.ws.bufferedAmount > 256 * 1024) {
       console.warn('[murmure] Speechmatics WebSocket bufferedAmount exceeded threshold; dropping chunk');
@@ -164,6 +174,7 @@ export class SpeechmaticsClient implements STTClient {
     this.ws = ws;
     this.audioSeqNo = 0;
     this.partialTurnId = '';
+    this.audioSendBlocked = false;
 
     ws.on('open', () => {
       try {
@@ -239,6 +250,7 @@ export class SpeechmaticsClient implements STTClient {
   private handleEvent(ev: SpeechmaticsEvent): void {
     switch (ev.message) {
       case 'RecognitionStarted': {
+        console.info('[murmure] Speechmatics RecognitionStarted', (ev as { id?: string }).id);
         this.reconnectAttempt = 0;
         this.sessionStartedAt = Date.now();
         this.partialTurnId = `t-${Date.now()}`;
@@ -276,9 +288,11 @@ export class SpeechmaticsClient implements STTClient {
         }
         break;
       }
-      case 'Info':
-        // quality / quota notices — log only
+      case 'Info': {
+        const i = ev as { type?: string; reason?: string };
+        console.info('[murmure] Speechmatics info:', i.type, i.reason);
         break;
+      }
       case 'Warning': {
         const w = ev as { type?: string; reason?: string };
         console.warn('[murmure] Speechmatics warning:', w.type, w.reason);
@@ -286,6 +300,7 @@ export class SpeechmaticsClient implements STTClient {
       }
       case 'Error': {
         const e = ev as { type?: string; reason?: string; code?: number };
+        console.error('[murmure] Speechmatics error:', e.type, e.reason, e.code);
         this.cb.onError({
           code: e.code !== undefined ? String(e.code) : e.type,
           message: e.reason ?? 'Erreur Speechmatics.',
@@ -293,7 +308,8 @@ export class SpeechmaticsClient implements STTClient {
         break;
       }
       default:
-        // Unknown messages ignored
+        // Unknown messages — log so we can spot protocol drift
+        console.info('[murmure] Speechmatics unknown message:', ev.message);
         break;
     }
   }

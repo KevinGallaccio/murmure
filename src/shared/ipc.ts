@@ -27,6 +27,10 @@ export type Provider = 'assemblyai' | 'speechmatics';
 
 export type ProviderState = { provider: Provider };
 
+export type TranscriptionLanguage = 'fr' | 'en';
+
+export type TranscriptionLanguageState = { language: TranscriptionLanguage };
+
 export type ApiKeyStatus = { hasKey: boolean };
 
 export type ApiKeyTestResult = { ok: boolean; error?: string };
@@ -36,6 +40,10 @@ export const IPC = {
   ProviderSet: 'provider:set',
   ProviderChanged: 'provider:changed',
   ProviderOpenSignup: 'provider:open-signup',
+
+  TranscriptionLanguageGet: 'transcription-language:get',
+  TranscriptionLanguageSet: 'transcription-language:set',
+  TranscriptionLanguageChanged: 'transcription-language:changed',
 
   ApiKeySave: 'apikey:save',
   ApiKeyTest: 'apikey:test',

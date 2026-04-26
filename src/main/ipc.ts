@@ -10,6 +10,7 @@ import {
   type StreamState,
   type Tab,
   type Theme,
+  type TranscriptionLanguage,
 } from '../shared/ipc';
 import {
   ASSEMBLY_DASHBOARD_URL,
@@ -24,6 +25,7 @@ import {
   getProvider,
   getStyleSettings,
   getTheme,
+  getTranscriptionLanguage,
   hasApiKey,
   resetStyle,
   resolveLocale,
@@ -31,6 +33,7 @@ import {
   setLanguageChoice,
   setProvider,
   setTheme,
+  setTranscriptionLanguage,
   updateStyle,
 } from './settings';
 import { findDisplay, listDisplays } from './displays';
@@ -196,11 +199,25 @@ export function registerIpc(controlWindow: BrowserWindow): void {
     activeProvider = next;
     client = createClientFor(next);
     broadcast(IPC.ProviderChanged, { provider: next });
+    // Cost rate is per-provider — push a fresh UsageUpdate so the cost card
+    // and the $/h chip in the hero re-render with the new provider's rate.
+    broadcast(IPC.UsageUpdate, usageTracker.snapshot());
     return { provider: next };
   });
   ipcMain.handle(IPC.ProviderOpenSignup, (_e, payload: { provider: Provider }) => {
     void shell.openExternal(signupUrlFor(payload.provider));
     return { ok: true };
+  });
+
+  ipcMain.handle(IPC.TranscriptionLanguageGet, () => ({ language: getTranscriptionLanguage() }));
+  ipcMain.handle(IPC.TranscriptionLanguageSet, (_e, payload: { language: TranscriptionLanguage }) => {
+    // Language is baked into the WebSocket session at start time. Stop any
+    // active stream so the operator's next Diffuser click opens a fresh
+    // session with the new language.
+    if (client && client.getState() !== 'idle') client.stop();
+    const next = setTranscriptionLanguage(payload.language);
+    broadcast(IPC.TranscriptionLanguageChanged, { language: next });
+    return { language: next };
   });
 
   ipcMain.handle(IPC.ApiKeyStatus, (_e, payload: { provider: Provider }) => ({

@@ -217,7 +217,6 @@ function MonitorLine({
           <span key={`s-${i}`}>{tok.text}</span>
         ),
       )}
-      {partial && <span className="stream-cursor" aria-hidden="true" />}
     </div>
   );
 }

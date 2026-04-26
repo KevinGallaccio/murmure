@@ -18,6 +18,8 @@ import type {
   Theme,
   TranscriptFinal,
   TranscriptPartial,
+  TranscriptionLanguage,
+  TranscriptionLanguageState,
   UsageUpdate,
 } from '../shared/ipc';
 import type { StyleSettings } from '../shared/style';
@@ -32,6 +34,11 @@ declare global {
         set: (provider: Provider) => Promise<ProviderState>;
         onChange: (cb: (s: ProviderState) => void) => () => void;
         openSignup: (provider: Provider) => Promise<{ ok: boolean }>;
+      };
+      transcriptionLanguage: {
+        get: () => Promise<TranscriptionLanguageState>;
+        set: (language: TranscriptionLanguage) => Promise<TranscriptionLanguageState>;
+        onChange: (cb: (s: TranscriptionLanguageState) => void) => () => void;
       };
       apikey: {
         status: (provider: Provider) => Promise<{ hasKey: boolean }>;
@@ -180,6 +187,21 @@ export function App(): JSX.Element {
   const setProvider = useCallback((next: Provider) => {
     setProviderState(next);
     void window.diffuseur.provider.set(next);
+  }, []);
+
+  const [transcriptionLanguage, setTranscriptionLanguageState] = useState<TranscriptionLanguage>('fr');
+
+  useEffect(() => {
+    void window.diffuseur.transcriptionLanguage.get().then((s) => setTranscriptionLanguageState(s.language));
+    const off = window.diffuseur.transcriptionLanguage.onChange((s) =>
+      setTranscriptionLanguageState(s.language),
+    );
+    return off;
+  }, []);
+
+  const setTranscriptionLanguage = useCallback((next: TranscriptionLanguage) => {
+    setTranscriptionLanguageState(next);
+    void window.diffuseur.transcriptionLanguage.set(next);
   }, []);
 
   const captureRef = useRef<AudioCapture | null>(null);
@@ -422,6 +444,8 @@ export function App(): JSX.Element {
               setLanguage={setLanguage}
               provider={provider}
               setProvider={setProvider}
+              transcriptionLanguage={transcriptionLanguage}
+              setTranscriptionLanguage={setTranscriptionLanguage}
               usage={usage}
               rms={rms}
               selectedDeviceId={deviceId}

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import type { LanguageChoice, Provider, UsageUpdate } from '../../shared/ipc';
+import type { LanguageChoice, Provider, TranscriptionLanguage, UsageUpdate } from '../../shared/ipc';
 import { useT } from '../i18n';
 import { IconCheck, IconExternal, IconEye, IconEyeOff, IconRefresh } from './Icons';
 
@@ -13,6 +13,8 @@ type Props = {
   setLanguage: (l: LanguageChoice) => void;
   provider: Provider;
   setProvider: (p: Provider) => void;
+  transcriptionLanguage: TranscriptionLanguage;
+  setTranscriptionLanguage: (l: TranscriptionLanguage) => void;
   usage: UsageUpdate | null;
   rms: number;
   selectedDeviceId: string | null;
@@ -31,6 +33,8 @@ export function SetupPage({
   setLanguage,
   provider,
   setProvider,
+  transcriptionLanguage,
+  setTranscriptionLanguage,
   usage,
   rms,
   selectedDeviceId,
@@ -81,6 +85,37 @@ export function SetupPage({
                     type="button"
                     className={language === o.v ? 'active' : ''}
                     onClick={() => setLanguage(o.v)}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Transcription language */}
+        <div className="card full">
+          <div className="setup-row">
+            <div>
+              <h3 className="card-title">{t.setup.transcriptionLanguageTitle}</h3>
+              <p className="card-sub" style={{ margin: 0, maxWidth: 520 }}>
+                {t.setup.transcriptionLanguageSub}
+              </p>
+            </div>
+            <div className="right">
+              <div className="seg">
+                {(
+                  [
+                    { v: 'fr' as const, label: t.setup.transcriptionLanguageFr },
+                    { v: 'en' as const, label: t.setup.transcriptionLanguageEn },
+                  ]
+                ).map((o) => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    className={transcriptionLanguage === o.v ? 'active' : ''}
+                    onClick={() => setTranscriptionLanguage(o.v)}
                   >
                     {o.label}
                   </button>

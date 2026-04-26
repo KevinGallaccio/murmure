@@ -7,6 +7,7 @@ import {
 } from '../shared/constants';
 import type { StreamState } from '../shared/ipc';
 import type { STTClient, STTClientCallbacks } from './stt-client';
+import { getTranscriptionLanguage } from './settings';
 
 type AssemblyEvent =
   | { type: 'Begin'; id: string; expires_at: number }
@@ -147,7 +148,7 @@ export class AssemblyAIClient implements STTClient {
     params.set('sample_rate', String(ASSEMBLY_PARAMS.sample_rate));
     params.set('encoding', ASSEMBLY_PARAMS.encoding);
     params.set('speech_model', ASSEMBLY_PARAMS.speech_model);
-    params.set('language', ASSEMBLY_PARAMS.language);
+    params.set('language', getTranscriptionLanguage());
     params.set('format_turns', String(ASSEMBLY_PARAMS.format_turns));
     params.set(
       'min_end_of_turn_silence_when_confident',

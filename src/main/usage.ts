@@ -1,6 +1,7 @@
 import {
   appendSession,
   bumpTotalSeconds,
+  getRatePerHour,
   getUsage,
   resetUsage as resetUsageStore,
   setRatePerHour as setRatePerHourStore,
@@ -63,11 +64,12 @@ class UsageTracker {
 
   snapshot(sessionSeconds = this.elapsedSessionSeconds()): UsageUpdate {
     const usage = getUsage();
+    const rate = getRatePerHour();
     return {
       sessionSeconds,
       totalSeconds: usage.totalSeconds,
-      estimatedCost: (usage.totalSeconds / 3600) * usage.ratePerHour,
-      ratePerHour: usage.ratePerHour,
+      estimatedCost: (usage.totalSeconds / 3600) * rate,
+      ratePerHour: rate,
       sessionCount: usage.sessions.length,
       resetAt: usage.resetAt,
     };

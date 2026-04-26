@@ -840,29 +840,10 @@ a { color: var(--brand); text-decoration: none; }
   from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.monitor-text .stream-cursor {
-  display: inline-block;
-  width: 0.08em;
-  height: 0.85em;
-  margin-left: 0.06em;
-  vertical-align: text-bottom;
-  background: currentColor;
-  border-radius: 1px;
-  opacity: 0.55;
-  animation: cursor-blink 1.1s steps(2, jump-none) infinite;
-}
-@keyframes cursor-blink {
-  0%, 49% { opacity: 0.55; }
-  50%, 100% { opacity: 0; }
-}
 @media (prefers-reduced-motion: reduce) {
   .monitor-text .stream-word.animate,
   .monitor-line.final.transition {
     animation: none;
-  }
-  .monitor-text .stream-cursor {
-    animation: none;
-    opacity: 0.5;
   }
 }
 .monitor-screen .badge {

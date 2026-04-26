@@ -97,6 +97,10 @@ export type Messages = {
     languageEnglish: string;
     languageFrench: string;
     languageAuto: string;
+    transcriptionLanguageTitle: string;
+    transcriptionLanguageSub: string;
+    transcriptionLanguageFr: string;
+    transcriptionLanguageEn: string;
     providerTitle: string;
     providerSub: string;
     providerAssembly: string;
@@ -243,10 +247,15 @@ const fr: Messages = {
     titleB: '.',
     sub: "Choisissez un fournisseur de transcription, collez votre clé, sélectionnez un microphone. Tout reste sur cette machine.",
     languageTitle: "Langue de l'interface",
-    languageSub: "Interface opérateur uniquement. La langue de transcription se règle dans shared/constants.ts.",
+    languageSub: "Affecte uniquement l'interface opérateur. La langue de transcription se règle juste en dessous.",
     languageEnglish: 'English',
     languageFrench: 'Français',
     languageAuto: 'Auto · langue du système',
+    transcriptionLanguageTitle: 'Langue de transcription',
+    transcriptionLanguageSub:
+      "La langue parlée par les intervenants. À régler avant chaque diffusion : un changement interrompt la session en cours.",
+    transcriptionLanguageFr: 'Français',
+    transcriptionLanguageEn: 'English',
     providerTitle: 'Fournisseur de transcription',
     providerSub:
       "Speechmatics excelle dans la transcription de la parole continue (interviews en direct, débats sans pause) et offre 480 minutes gratuites par mois. AssemblyAI reste disponible en alternative.",
@@ -409,10 +418,15 @@ const en: Messages = {
     titleB: '.',
     sub: 'Pick a transcription provider, paste your key, choose a microphone. Everything stays on this machine.',
     languageTitle: 'Interface language',
-    languageSub: 'Operator UI only. Transcription language is set separately in shared/constants.ts.',
+    languageSub: 'Affects only the operator UI. The transcription language is set just below.',
     languageEnglish: 'English',
     languageFrench: 'Français',
     languageAuto: 'Auto · OS',
+    transcriptionLanguageTitle: 'Transcription language',
+    transcriptionLanguageSub:
+      'The language spoken by the participants. Set this before each broadcast — changing it stops the active session.',
+    transcriptionLanguageFr: 'Français',
+    transcriptionLanguageEn: 'English',
     providerTitle: 'Transcription provider',
     providerSub:
       'Speechmatics excels at continuous speech (live interviews, debates without pauses) and offers 480 free minutes per month. AssemblyAI is kept as an alternative.',

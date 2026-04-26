@@ -2,6 +2,7 @@ import WebSocket from 'ws';
 import { RECONNECT_BACKOFF_MS, SPEECHMATICS_PARAMS, SPEECHMATICS_WS_URL } from '../shared/constants';
 import type { StreamState } from '../shared/ipc';
 import type { STTClient, STTClientCallbacks } from './stt-client';
+import { getTranscriptionLanguage } from './settings';
 
 type SpeechmaticsEvent =
   | { message: 'RecognitionStarted'; id?: string }
@@ -412,7 +413,7 @@ function buildStartRecognition() {
       sample_rate: SPEECHMATICS_PARAMS.sample_rate,
     },
     transcription_config: {
-      language: SPEECHMATICS_PARAMS.language,
+      language: getTranscriptionLanguage(),
       operating_point: SPEECHMATICS_PARAMS.operating_point,
       max_delay: SPEECHMATICS_PARAMS.max_delay,
       max_delay_mode: SPEECHMATICS_PARAMS.max_delay_mode,

@@ -123,7 +123,6 @@ function StreamLine({ line, transitions }: { line: Line; transitions: boolean })
           <span key={`s-${i}`}>{tok.text}</span>
         ),
       )}
-      {line.partial && <span className="stream-cursor" aria-hidden="true" />}
       {'\n'}
     </span>
   );

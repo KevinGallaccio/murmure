@@ -16,6 +16,8 @@ import type {
   Theme,
   TranscriptFinal,
   TranscriptPartial,
+  TranscriptionLanguage,
+  TranscriptionLanguageState,
   UsageUpdate,
 } from '../shared/ipc';
 import { IPC } from '../shared/ipc';
@@ -37,6 +39,14 @@ const api = {
     onChange: (cb: (s: ProviderState) => void) => subscribe<ProviderState>(IPC.ProviderChanged, cb),
     openSignup: (provider: Provider): Promise<{ ok: boolean }> =>
       ipcRenderer.invoke(IPC.ProviderOpenSignup, { provider }),
+  },
+  transcriptionLanguage: {
+    get: (): Promise<TranscriptionLanguageState> =>
+      ipcRenderer.invoke(IPC.TranscriptionLanguageGet),
+    set: (language: TranscriptionLanguage): Promise<TranscriptionLanguageState> =>
+      ipcRenderer.invoke(IPC.TranscriptionLanguageSet, { language }),
+    onChange: (cb: (s: TranscriptionLanguageState) => void) =>
+      subscribe<TranscriptionLanguageState>(IPC.TranscriptionLanguageChanged, cb),
   },
   apikey: {
     status: (provider: Provider): Promise<ApiKeyStatus> =>

@@ -1,5 +1,10 @@
 import WebSocket from 'ws';
-import { ASSEMBLY_PARAMS, ASSEMBLY_WS_BASE, RECONNECT_BACKOFF_MS } from '../shared/constants';
+import {
+  ASSEMBLY_PARAMS,
+  ASSEMBLY_WS_BASE,
+  FORCE_ENDPOINT_MS,
+  RECONNECT_BACKOFF_MS,
+} from '../shared/constants';
 import type { StreamErrorPayload, StreamState, TranscriptFinal, TranscriptPartial } from '../shared/ipc';
 
 export type AssemblyAIClientCallbacks = {
@@ -25,6 +30,7 @@ export class AssemblyAIClient {
   private explicitlyStopped = false;
   private lastTurnId: string = '';
   private currentTurnText = '';
+  private forceEndpointTimer: NodeJS.Timeout | null = null;
 
   constructor(private readonly cb: AssemblyAIClientCallbacks) {}
 
@@ -40,6 +46,7 @@ export class AssemblyAIClient {
 
   stop(): void {
     this.explicitlyStopped = true;
+    this.clearForceEndpoint();
     if (this.ws) {
       try {
         this.ws.send(JSON.stringify({ type: 'Terminate' }));
@@ -166,6 +173,7 @@ export class AssemblyAIClient {
     this.ws = ws;
     this.lastTurnId = '';
     this.currentTurnText = '';
+    this.clearForceEndpoint();
 
     ws.on('open', () => {
       // wait for Begin event before declaring streaming
@@ -223,9 +231,15 @@ export class AssemblyAIClient {
         if (turnId !== this.lastTurnId) {
           this.lastTurnId = turnId;
           this.currentTurnText = '';
+          // New turn detected — start the watchdog. If this turn keeps
+          // growing for FORCE_ENDPOINT_MS without committing, we'll force
+          // AssemblyAI to commit it so the audience sees the text before
+          // the speaker finally pauses.
+          this.scheduleForceEndpoint();
         }
         const text = turnEv.transcript ?? '';
         if (turnEv.end_of_turn && turnEv.turn_is_formatted) {
+          this.clearForceEndpoint();
           this.cb.onFinal({ text, turnId, timestamp: Date.now() });
           this.currentTurnText = '';
         } else if (!turnEv.end_of_turn) {
@@ -254,6 +268,28 @@ export class AssemblyAIClient {
   private transitionTo(next: StreamState): void {
     if (this.state === next) return;
     this.state = next;
+    if (next !== 'streaming') this.clearForceEndpoint();
     this.cb.onStateChange(next);
+  }
+
+  private scheduleForceEndpoint(): void {
+    this.clearForceEndpoint();
+    this.forceEndpointTimer = setTimeout(() => {
+      this.forceEndpointTimer = null;
+      if (this.ws && this.ws.readyState === WebSocket.OPEN && this.state === 'streaming') {
+        try {
+          this.ws.send(JSON.stringify({ type: 'ForceEndpoint' }));
+        } catch (err) {
+          console.error('[murmure] ForceEndpoint send failed', err);
+        }
+      }
+    }, FORCE_ENDPOINT_MS);
+  }
+
+  private clearForceEndpoint(): void {
+    if (this.forceEndpointTimer) {
+      clearTimeout(this.forceEndpointTimer);
+      this.forceEndpointTimer = null;
+    }
   }
 }

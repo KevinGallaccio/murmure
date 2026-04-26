@@ -22,6 +22,13 @@ export const DEFAULT_RATE_PER_HOUR = 0.45;
 
 export const RECONNECT_BACKOFF_MS = [1000, 2000, 4000];
 
+// If the current turn has been growing for this long without a final, send
+// a ForceEndpoint to AssemblyAI to commit what's there. Without this, very
+// long pause-free monologues (e.g. fast-paced podcast guests) only commit
+// after the speaker finally breathes — and arrive on screen as one
+// hard-to-follow block.
+export const FORCE_ENDPOINT_MS = 5000;
+
 export const USAGE_CHECKPOINT_INTERVAL_MS = 30_000;
 
 export const MOCK_FRENCH_LINES = [

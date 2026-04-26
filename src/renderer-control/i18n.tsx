@@ -180,8 +180,8 @@ const fr: Messages = {
   },
   appearance: {
     eyebrow: 'Apparence',
-    titleA: 'Comment la salle ',
-    titleEm: 'lit',
+    titleA: 'Ce que voit votre ',
+    titleEm: 'audience',
     titleB: '.',
     sub: "Réglez l'écran d'audience pour qu'il fonctionne pour le dernier rang. Les modifications s'appliquent en direct.",
     previewTitle: 'Aperçu pour le public',

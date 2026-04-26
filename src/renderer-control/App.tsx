@@ -352,27 +352,6 @@ export function App(): JSX.Element {
 
   return (
     <div className="app">
-      <header className="titlebar">
-        <div />
-        <div className="title">murmure</div>
-        <div className="titlebar-right">
-          <span className="rec">
-            <span
-              className="dot"
-              style={{
-                background: streamState === 'streaming' ? 'var(--brand)' : 'var(--ink-4)',
-                width: 6,
-                height: 6,
-                boxShadow: 'none',
-              }}
-            />
-            {streamState === 'streaming' ? 'rec' : 'idle'}
-          </span>
-          <span>·</span>
-          <span>v 1.1.0</span>
-        </div>
-      </header>
-
       <div className="body">
         <Sidebar
           tab={tab}

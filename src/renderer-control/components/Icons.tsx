@@ -1,4 +1,4 @@
-import type { ComponentType, CSSProperties, ReactNode } from 'react';
+import type { ComponentType, CSSProperties } from 'react';
 import {
   Check,
   ExternalLink,
@@ -7,8 +7,11 @@ import {
   Globe,
   Moon,
   PartyPopper,
+  Play,
+  Radio,
   RefreshCw,
   Settings,
+  Square,
   Sun,
   TriangleAlert,
   Type,
@@ -27,7 +30,7 @@ type IconProps = {
 
 // Lucide ships at strokeWidth=2; murmure's hand-drawn icons used 1.5 and
 // the rest of the visual language was tuned to that lighter weight. Lock
-// to 1.5 here so the swap is visually a no-op for callers.
+// to 1.5 here so every site picks up the same density.
 const DEFAULT_STROKE = 1.5;
 const DEFAULT_SIZE = 16;
 
@@ -44,70 +47,32 @@ function lucide(Icon: ComponentType<LucideProps>) {
   return Wrapped;
 }
 
-// ---- Brand-specific custom icons (kept hand-drawn) ------------------
-//
-// These three earn their custom-SVG status:
-//
-// IconStage mirrors the brand mark itself (three dots resolving into a
-// rounded rectangle = "scattered sound becoming continuous text"). Using a
-// generic stage/wave icon would break that identity loop.
-//
-// IconPlay and IconStop are deliberately *filled* glyphs — Lucide's defaults
-// are stroked, and the broadcast button reads as a transport control where
-// solid shapes are the convention (DAWs, video players). Keeping them
-// custom keeps the fill consistent without per-icon prop overrides.
-
-function Svg({
-  size = 16,
-  className,
-  style,
-  fill = 'none',
-  stroke = 'currentColor',
-  strokeWidth = 1.5,
-  viewBox = '0 0 24 24',
-  children,
-}: IconProps & { viewBox?: string; children: ReactNode }): JSX.Element {
-  return (
-    <svg
-      className={`ico ${className ?? ''}`}
-      width={size}
-      height={size}
-      viewBox={viewBox}
-      fill={fill}
-      stroke={stroke}
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={style}
+// Variant for transport controls (Play, Stop). Lucide's defaults are
+// hollow outlines, but Diffuser's start/stop button reads as a recording
+// transport where solid glyphs are the convention (DAWs, video players).
+// Filling with currentColor and dropping stroke gives the same look the
+// hand-drawn versions had.
+function lucideFilled(Icon: ComponentType<LucideProps>) {
+  const Wrapped = (p: IconProps): JSX.Element => (
+    <Icon
+      size={p.size ?? DEFAULT_SIZE}
+      strokeWidth={0}
+      fill="currentColor"
+      className={`ico ${p.className ?? ''}`}
+      style={p.style}
       aria-hidden="true"
-    >
-      {children}
-    </svg>
+    />
   );
+  return Wrapped;
 }
 
-export const IconStage = (p: IconProps) => (
-  <Svg {...p}>
-    <circle cx="5" cy="12" r="1.6" />
-    <circle cx="10" cy="12" r="1.6" />
-    <circle cx="15" cy="12" r="1.6" />
-    <rect x="18.5" y="10.4" width="3.2" height="3.2" rx="1.6" />
-  </Svg>
-);
+// Stage tab represents broadcast control ("régie" in French — the room
+// where a live show is orchestrated). Lucide's Radio (a sphere emitting
+// waves) is the most direct visual handle for that.
+export const IconStage = lucide(Radio);
 
-export const IconPlay = (p: IconProps) => (
-  <Svg {...p} fill="currentColor" stroke="none">
-    <path d="M6 4l14 8L6 20z" />
-  </Svg>
-);
-
-export const IconStop = (p: IconProps) => (
-  <Svg {...p} fill="currentColor" stroke="none">
-    <rect x="6" y="6" width="12" height="12" rx="1.5" />
-  </Svg>
-);
-
-// ---- Lucide-backed icons --------------------------------------------
+export const IconPlay = lucideFilled(Play);
+export const IconStop = lucideFilled(Square);
 
 export const IconAppearance = lucide(Type);
 export const IconSetup = lucide(Settings);

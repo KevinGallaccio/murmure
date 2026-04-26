@@ -38,6 +38,11 @@ export class SpeechmaticsClient implements STTClient {
   private finalCount = 0;
   private partialCount = 0;
   private partialTurnId = '';
+  // Buffer of words committed by AddTranscript that haven't yet ended a
+  // sentence. We flush this as a single final to the renderer when we see
+  // sentence-end punctuation (.?!…), so the audience sees one line per
+  // sentence instead of one line per 1-3-word commit window.
+  private sentenceBuffer = '';
   private sessionStartedAt = 0;
   private closeGraceTimer: NodeJS.Timeout | null = null;
   private heartbeatTimer: NodeJS.Timeout | null = null;
@@ -67,6 +72,10 @@ export class SpeechmaticsClient implements STTClient {
     // Block any further audio chunks from reaching the wire BEFORE we send
     // EndOfStream — otherwise the server complains with add_audio_after_eos.
     this.audioSendBlocked = true;
+    // Flush whatever sentence is in flight so the audience sees the last
+    // partial words committed instead of having them disappear when the
+    // partial is cleared by stop.
+    this.flushSentenceBuffer();
     this.clearCloseGrace();
     if (this.ws) {
       // Ask Speechmatics to flush remaining transcript before disconnect.
@@ -207,6 +216,7 @@ export class SpeechmaticsClient implements STTClient {
     this.ws = ws;
     this.audioSeqNo = 0;
     this.partialTurnId = '';
+    this.sentenceBuffer = '';
     this.audioSendBlocked = false;
     this.gatedLogged = false;
 
@@ -308,34 +318,37 @@ export class SpeechmaticsClient implements STTClient {
       }
       case 'AddPartialTranscript': {
         this.partialCount += 1;
-        const text = extractTranscript(ev);
+        const partialText = extractTranscript(ev);
         if (!this.firstPartialLogged) {
           this.firstPartialLogged = true;
           console.info('[murmure] Speechmatics ← first AddPartialTranscript:', JSON.stringify(ev));
         } else if (this.partialCount % 10 === 0) {
           console.info(
-            `[murmure] Speechmatics partial #${this.partialCount}: "${text.length > 60 ? text.slice(0, 60) + '…' : text}" (len=${text.length})`,
+            `[murmure] Speechmatics partial #${this.partialCount}: "${partialText.length > 60 ? partialText.slice(0, 60) + '…' : partialText}" (len=${partialText.length})`,
           );
         }
-        if (!text) break;
-        this.cb.onPartial({ text, turnId: this.partialTurnId });
+        // Show the in-flight sentence: words already committed-but-not-yet-
+        // sentence-ended, plus the rolling tail Speechmatics is still working
+        // on. The audience sees one growing sentence until punctuation lands.
+        const display = normalizeSpacing(this.sentenceBuffer + partialText);
+        if (display) this.cb.onPartial({ text: display, turnId: this.partialTurnId });
         break;
       }
       case 'AddTranscript': {
-        const text = extractTranscript(ev);
+        const fragment = extractTranscript(ev);
         if (!this.firstFinalLogged) {
           this.firstFinalLogged = true;
           console.info('[murmure] Speechmatics ← first AddTranscript:', JSON.stringify(ev));
-        } else {
-          console.info(`[murmure] Speechmatics final: "${text}" (len=${text.length})`);
+        } else if (fragment) {
+          console.info(`[murmure] Speechmatics fragment: "${fragment}" (len=${fragment.length})`);
         }
-        if (!text.trim()) break;
-        this.finalCount += 1;
-        const turnId = `f-${this.finalCount}`;
-        this.cb.onFinal({ text, turnId, timestamp: Date.now() });
-        // start a fresh partial bucket so the next partials don't appear to
-        // append to the just-committed final
-        this.partialTurnId = `t-${Date.now()}`;
+        if (!fragment.trim()) break;
+        // Speechmatics commits 1-3 words every max_delay (1.5s); buffer them
+        // until we see a sentence-ending punctuation, then emit the whole
+        // sentence as a single final. Keeps the renderer's "one line per
+        // final" behavior coherent with what AssemblyAI naturally produces.
+        this.sentenceBuffer = normalizeSpacing(this.sentenceBuffer + fragment);
+        this.emitCompletedSentences();
         break;
       }
       case 'EndOfTranscript': {
@@ -388,6 +401,40 @@ export class SpeechmaticsClient implements STTClient {
     }
   }
 
+  private emitCompletedSentences(): void {
+    // Greedily pull off everything up to and including the first sentence-end
+    // run (one or more of . ? ! …) followed by whitespace or end-of-buffer.
+    // Loop because a single fragment can carry multiple sentences (e.g. the
+    // observed "suite. Là, " — emit "...suite.", keep "Là, " buffered).
+    for (;;) {
+      const m = /([.?!…]+)(\s+|$)/.exec(this.sentenceBuffer);
+      if (!m) break;
+      const endIndex = m.index + m[1].length;
+      const completed = this.sentenceBuffer.slice(0, endIndex).trim();
+      this.sentenceBuffer = this.sentenceBuffer.slice(m.index + m[0].length);
+      if (!completed) continue;
+      this.finalCount += 1;
+      this.cb.onFinal({
+        text: completed,
+        turnId: `f-${this.finalCount}`,
+        timestamp: Date.now(),
+      });
+      this.partialTurnId = `t-${Date.now()}`;
+    }
+  }
+
+  private flushSentenceBuffer(): void {
+    const remainder = this.sentenceBuffer.trim();
+    if (!remainder) return;
+    this.sentenceBuffer = '';
+    this.finalCount += 1;
+    this.cb.onFinal({
+      text: remainder,
+      turnId: `f-${this.finalCount}`,
+      timestamp: Date.now(),
+    });
+  }
+
   private startHeartbeat(): void {
     this.stopHeartbeat();
     this.heartbeatTimer = setInterval(() => {
@@ -403,6 +450,15 @@ export class SpeechmaticsClient implements STTClient {
       this.heartbeatTimer = null;
     }
   }
+}
+
+// Collapse runs of whitespace into a single space, drop any whitespace that
+// landed before a punctuation mark (Speechmatics emits ". " as its own
+// fragment, so concat produces "word . " — we want "word. ").
+function normalizeSpacing(s: string): string {
+  return s
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,;:!?…])/g, '$1');
 }
 
 // Speechmatics format 2.9 nests the transcript text inside `metadata.transcript`

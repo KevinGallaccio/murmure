@@ -36,7 +36,6 @@ export class SpeechmaticsClient implements STTClient {
   // Speechmatics' AudioAdded.seq_no follows our send order starting at 1.
   private audioSeqNo = 0;
   private finalCount = 0;
-  private partialCount = 0;
   private partialTurnId = '';
   // Buffer of words committed by AddTranscript that haven't yet ended a
   // sentence. We flush this as a single final to the renderer when we see
@@ -45,9 +44,6 @@ export class SpeechmaticsClient implements STTClient {
   private sentenceBuffer = '';
   private sessionStartedAt = 0;
   private closeGraceTimer: NodeJS.Timeout | null = null;
-  private heartbeatTimer: NodeJS.Timeout | null = null;
-  private firstPartialLogged = false;
-  private firstFinalLogged = false;
   // Once true, sendAudio is a no-op until the next connect(). We flip this
   // the moment we send EndOfStream so that the renderer's in-flight chunks
   // (which can keep arriving for a few ms while state propagation catches
@@ -100,18 +96,9 @@ export class SpeechmaticsClient implements STTClient {
   }
 
   sendAudio(buffer: ArrayBuffer): void {
-    if (this.audioSendBlocked) {
-      this.logGatedOnce('audioSendBlocked (post-EndOfStream)');
-      return;
-    }
-    if (this.state !== 'streaming') {
-      this.logGatedOnce(`state=${this.state}, expected streaming`);
-      return;
-    }
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      this.logGatedOnce(`ws not open (readyState=${this.ws?.readyState})`);
-      return;
-    }
+    if (this.audioSendBlocked) return;
+    if (this.state !== 'streaming') return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     if (this.ws.bufferedAmount > 256 * 1024) {
       console.warn('[murmure] Speechmatics WebSocket bufferedAmount exceeded threshold; dropping chunk');
       return;
@@ -119,25 +106,9 @@ export class SpeechmaticsClient implements STTClient {
     try {
       this.ws.send(Buffer.from(buffer), { binary: true });
       this.audioSeqNo += 1;
-      if (this.audioSeqNo === 1 || this.audioSeqNo % 50 === 0) {
-        // Sample the first few bytes to confirm we're not sending all-zero
-        // silence. PCM s16le with audible signal will have non-zero values.
-        const view = new Int16Array(buffer.slice(0, 16));
-        const peak = Math.max(...Array.from(view).map((v) => Math.abs(v)));
-        console.info(
-          `[murmure] Speechmatics sent #${this.audioSeqNo} (${buffer.byteLength}B, peak16=${peak})`,
-        );
-      }
     } catch (err) {
       console.error('[murmure] Speechmatics failed to send audio chunk', err);
     }
-  }
-
-  private gatedLogged = false;
-  private logGatedOnce(reason: string): void {
-    if (this.gatedLogged) return;
-    this.gatedLogged = true;
-    console.warn(`[murmure] Speechmatics sendAudio gated — ${reason}`);
   }
 
   testApiKey(apiKey: string): Promise<{ ok: boolean; error?: string }> {
@@ -218,13 +189,10 @@ export class SpeechmaticsClient implements STTClient {
     this.partialTurnId = '';
     this.sentenceBuffer = '';
     this.audioSendBlocked = false;
-    this.gatedLogged = false;
 
     ws.on('open', () => {
       try {
-        const msg = buildStartRecognition();
-        console.info('[murmure] Speechmatics → StartRecognition', JSON.stringify(msg));
-        ws.send(JSON.stringify(msg));
+        ws.send(JSON.stringify(buildStartRecognition()));
       } catch (err) {
         this.cb.onError({ message: (err as Error).message ?? "Échec d'envoi." });
         this.transitionTo('error');
@@ -296,37 +264,19 @@ export class SpeechmaticsClient implements STTClient {
   private handleEvent(ev: SpeechmaticsEvent): void {
     switch (ev.message) {
       case 'RecognitionStarted': {
-        console.info('[murmure] Speechmatics RecognitionStarted', (ev as { id?: string }).id);
         this.reconnectAttempt = 0;
         this.sessionStartedAt = Date.now();
         this.partialTurnId = `t-${Date.now()}`;
-        this.partialCount = 0;
         this.finalCount = 0;
-        this.firstPartialLogged = false;
-        this.firstFinalLogged = false;
-        this.startHeartbeat();
         this.transitionTo('streaming');
         this.cb.onSessionBegin();
         break;
       }
-      case 'AudioAdded': {
-        const ack = (ev as { seq_no: number }).seq_no;
-        if (ack === 1 || ack % 50 === 0) {
-          console.info(`[murmure] Speechmatics ack chunk #${ack}`);
-        }
+      case 'AudioAdded':
+        // server-side ack; we count locally on send
         break;
-      }
       case 'AddPartialTranscript': {
-        this.partialCount += 1;
         const partialText = extractTranscript(ev);
-        if (!this.firstPartialLogged) {
-          this.firstPartialLogged = true;
-          console.info('[murmure] Speechmatics ← first AddPartialTranscript:', JSON.stringify(ev));
-        } else if (this.partialCount % 10 === 0) {
-          console.info(
-            `[murmure] Speechmatics partial #${this.partialCount}: "${partialText.length > 60 ? partialText.slice(0, 60) + '…' : partialText}" (len=${partialText.length})`,
-          );
-        }
         // Show the in-flight sentence: words already committed-but-not-yet-
         // sentence-ended, plus the rolling tail Speechmatics is still working
         // on. The audience sees one growing sentence until punctuation lands.
@@ -336,12 +286,6 @@ export class SpeechmaticsClient implements STTClient {
       }
       case 'AddTranscript': {
         const fragment = extractTranscript(ev);
-        if (!this.firstFinalLogged) {
-          this.firstFinalLogged = true;
-          console.info('[murmure] Speechmatics ← first AddTranscript:', JSON.stringify(ev));
-        } else if (fragment) {
-          console.info(`[murmure] Speechmatics fragment: "${fragment}" (len=${fragment.length})`);
-        }
         if (!fragment.trim()) break;
         // Speechmatics commits 1-3 words every max_delay (1.5s); buffer them
         // until we see a sentence-ending punctuation, then emit the whole
@@ -361,19 +305,17 @@ export class SpeechmaticsClient implements STTClient {
         }
         break;
       }
-      case 'Info': {
-        const i = ev as { type?: string; reason?: string };
-        console.info('[murmure] Speechmatics info:', i.type, i.reason);
+      case 'Info':
+        // quality / quota / model selection notices — not actionable
         break;
-      }
       case 'Warning': {
+        // idle_timeout, session_timeout, add_audio_after_eos, etc. — operational
         const w = ev as { type?: string; reason?: string };
         console.warn('[murmure] Speechmatics warning:', w.type, w.reason);
         break;
       }
       case 'Error': {
         const e = ev as { type?: string; reason?: string; code?: number };
-        console.error('[murmure] Speechmatics error:', e.type, e.reason, e.code);
         this.cb.onError({
           code: e.code !== undefined ? String(e.code) : e.type,
           message: e.reason ?? 'Erreur Speechmatics.',
@@ -381,8 +323,6 @@ export class SpeechmaticsClient implements STTClient {
         break;
       }
       default:
-        // Unknown messages — log so we can spot protocol drift
-        console.info('[murmure] Speechmatics unknown message:', ev.message);
         break;
     }
   }
@@ -390,7 +330,6 @@ export class SpeechmaticsClient implements STTClient {
   private transitionTo(next: StreamState): void {
     if (this.state === next) return;
     this.state = next;
-    if (next !== 'streaming') this.stopHeartbeat();
     this.cb.onStateChange(next);
   }
 
@@ -433,22 +372,6 @@ export class SpeechmaticsClient implements STTClient {
       turnId: `f-${this.finalCount}`,
       timestamp: Date.now(),
     });
-  }
-
-  private startHeartbeat(): void {
-    this.stopHeartbeat();
-    this.heartbeatTimer = setInterval(() => {
-      console.info(
-        `[murmure] Speechmatics heartbeat: sent=${this.audioSeqNo} chunks, partials=${this.partialCount}, finals=${this.finalCount}`,
-      );
-    }, 5000);
-  }
-
-  private stopHeartbeat(): void {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer);
-      this.heartbeatTimer = null;
-    }
   }
 }
 

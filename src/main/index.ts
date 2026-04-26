@@ -1,6 +1,8 @@
 import { app, BrowserWindow, globalShortcut, session, systemPreferences } from 'electron';
 import { createControlWindow } from './windows';
 import { registerIpc } from './ipc';
+import { initUpdater, setupUpdateDownloadedPrompt } from './updater';
+import { setupAppMenu } from './menu';
 
 if (process.platform === 'darwin') {
   app.setName('murmure');
@@ -11,6 +13,13 @@ let controlWindow: BrowserWindow | null = null;
 function init(): void {
   controlWindow = createControlWindow();
   registerIpc(controlWindow);
+  
+  // Set up the application menu with "Check for Updates"
+  setupAppMenu(() => controlWindow);
+  
+  // Initialize the auto-updater
+  initUpdater();
+  setupUpdateDownloadedPrompt(() => controlWindow);
 }
 
 app.whenReady().then(async () => {

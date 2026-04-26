@@ -143,43 +143,8 @@ a { color: var(--brand); text-decoration: none; }
 
 /* App shell ------------------------------------------------- */
 .app {
-  display: grid;
-  grid-template-rows: 38px 1fr;
   height: 100vh;
   background: var(--paper);
-}
-
-/* Titlebar -------------------------------------------------- */
-.titlebar {
-  height: 38px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  padding: 0 14px;
-  background: var(--paper-2);
-  border-bottom: 1px solid var(--line);
-  -webkit-app-region: drag;
-}
-.titlebar .title {
-  font-size: 12px;
-  color: var(--ink-3);
-  letter-spacing: 0.02em;
-  text-align: center;
-}
-.titlebar-right {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-4);
-  -webkit-app-region: no-drag;
-}
-.titlebar-right .rec {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
 }
 
 /* Body grid ------------------------------------------------- */

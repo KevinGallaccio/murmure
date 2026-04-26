@@ -20,6 +20,82 @@ function shouldUseManualMacFlow(): boolean {
   return process.platform === 'darwin' && !MACOS_AUTO_INSTALL_ENABLED;
 }
 
+// Updater dialogs live in the main process and don't have access to the
+// renderer's i18n state. We pick the dialog language from the OS locale so
+// English-speaking users on an English Mac don't see French dialogs. (If the
+// user explicitly toggled the in-app FR/EN switch to something different from
+// their OS locale, dialogs will still follow the OS — acceptable trade-off
+// until the renderer's locale is plumbed through to main.)
+type UpdaterLocale = 'fr' | 'en';
+
+function getUpdaterLocale(): UpdaterLocale {
+  const sys = (app.getLocale() || '').toLowerCase();
+  return sys.startsWith('en') ? 'en' : 'fr';
+}
+
+const STRINGS = {
+  fr: {
+    updateAvailable: 'Mise à jour disponible',
+    updateMessage: (latest: string, current: string) =>
+      `Une nouvelle version (${latest}) est disponible.\n\nVersion actuelle : ${current}`,
+    macDownloadDetail:
+      "Téléchargez le nouvel installateur depuis GitHub puis remplacez l'application dans le dossier Applications.\n\n" +
+      "(L'installation automatique sur macOS requiert une signature Apple Developer, pas encore en place pour ce projet.)",
+    openGithub: 'Ouvrir GitHub',
+    later: 'Plus tard',
+    download: 'Télécharger',
+    askDownload: 'Voulez-vous télécharger et installer la mise à jour ?',
+    downloadInProgress: 'Téléchargement en cours',
+    downloadInBackground: 'La mise à jour va être téléchargée en arrière-plan.',
+    downloadNotify: "L'application vous notifiera lorsque l'installation sera prête.",
+    ok: 'OK',
+    updateReady: 'Mise à jour prête',
+    versionDownloaded: (v: string) => `La version ${v} a été téléchargée.`,
+    macInstallReadyDetail:
+      'Téléchargez le nouvel installateur depuis GitHub pour terminer la mise à jour.\n\n' +
+      "(L'installation automatique sur macOS requiert une signature Apple Developer, pas encore en place pour ce projet.)",
+    restartToApply: "L'application doit redémarrer pour appliquer la mise à jour.",
+    restartNow: 'Redémarrer maintenant',
+    update: 'Mise à jour',
+    onLatest: 'Vous utilisez la dernière version de murmure.',
+    updateError: 'Erreur de mise à jour',
+    cantCheck: 'Impossible de vérifier les mises à jour.',
+    unknownError: 'Erreur inconnue',
+  },
+  en: {
+    updateAvailable: 'Update available',
+    updateMessage: (latest: string, current: string) =>
+      `A new version (${latest}) is available.\n\nCurrent version: ${current}`,
+    macDownloadDetail:
+      'Download the new installer from GitHub and replace the app in your Applications folder.\n\n' +
+      '(Automatic install on macOS requires an Apple Developer signature, not yet set up for this project.)',
+    openGithub: 'Open GitHub',
+    later: 'Later',
+    download: 'Download',
+    askDownload: 'Download and install the update?',
+    downloadInProgress: 'Downloading',
+    downloadInBackground: 'The update will be downloaded in the background.',
+    downloadNotify: "You'll be notified when it's ready to install.",
+    ok: 'OK',
+    updateReady: 'Update ready',
+    versionDownloaded: (v: string) => `Version ${v} has been downloaded.`,
+    macInstallReadyDetail:
+      'Download the new installer from GitHub to finish the update.\n\n' +
+      '(Automatic install on macOS requires an Apple Developer signature, not yet set up for this project.)',
+    restartToApply: 'The app needs to restart to apply the update.',
+    restartNow: 'Restart now',
+    update: 'Update',
+    onLatest: "You're on the latest version of murmure.",
+    updateError: 'Update error',
+    cantCheck: 'Could not check for updates.',
+    unknownError: 'Unknown error',
+  },
+} as const;
+
+function tr() {
+  return STRINGS[getUpdaterLocale()];
+}
+
 export type UpdateStatus =
   | { type: 'idle' }
   | { type: 'checking' }
@@ -81,7 +157,7 @@ export function initUpdater(): void {
   });
 
   autoUpdater.on('error', (err) => {
-    setStatus({ type: 'error', message: err?.message ?? 'Erreur inconnue' });
+    setStatus({ type: 'error', message: err?.message ?? tr().unknownError });
   });
 }
 
@@ -89,7 +165,7 @@ export async function checkForUpdates(): Promise<UpdateCheckResult | null> {
   try {
     return await autoUpdater.checkForUpdates();
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Erreur inconnue';
+    const message = err instanceof Error ? err.message : tr().unknownError;
     setStatus({ type: 'error', message });
     return null;
   }
@@ -99,7 +175,7 @@ export async function downloadUpdate(): Promise<void> {
   try {
     await autoUpdater.downloadUpdate();
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Échec du téléchargement';
+    const message = err instanceof Error ? err.message : tr().unknownError;
     setStatus({ type: 'error', message });
   }
 }
@@ -118,14 +194,15 @@ export function onUpdateStatus(listener: UpdateListener): () => void {
 }
 
 export async function checkForUpdatesInteractive(parentWindow: BrowserWindow | null): Promise<void> {
+  const s = tr();
   try {
     const result = await autoUpdater.checkForUpdates();
     if (!result || !result.updateInfo) {
       await showDialog(parentWindow, {
         type: 'info',
-        title: 'Mise à jour',
-        message: 'Vous utilisez la dernière version de murmure.',
-        buttons: ['OK'],
+        title: s.update,
+        message: s.onLatest,
+        buttons: [s.ok],
       });
       return;
     }
@@ -133,13 +210,12 @@ export async function checkForUpdatesInteractive(parentWindow: BrowserWindow | n
     const currentVersion = app.getVersion();
     const latestVersion = result.updateInfo.version;
 
-    // If versions match, no update needed (checkForUpdates handles version comparison)
     if (latestVersion === currentVersion) {
       await showDialog(parentWindow, {
         type: 'info',
-        title: 'Mise à jour',
-        message: 'Vous utilisez la dernière version de murmure.',
-        buttons: ['OK'],
+        title: s.update,
+        message: s.onLatest,
+        buttons: [s.ok],
       });
       return;
     }
@@ -149,12 +225,10 @@ export async function checkForUpdatesInteractive(parentWindow: BrowserWindow | n
       // user to the Releases page instead of silently failing on restart.
       const response = await showDialog(parentWindow, {
         type: 'info',
-        title: 'Mise à jour disponible',
-        message: `Une nouvelle version (${latestVersion}) est disponible.\n\nVersion actuelle : ${currentVersion}`,
-        detail:
-          "Téléchargez le nouvel installateur depuis GitHub puis remplacez l'application dans le dossier Applications.\n\n" +
-          "(L'installation automatique sur macOS requiert une signature Apple Developer, pas encore en place pour ce projet.)",
-        buttons: ['Ouvrir GitHub', 'Plus tard'],
+        title: s.updateAvailable,
+        message: s.updateMessage(latestVersion, currentVersion),
+        detail: s.macDownloadDetail,
+        buttons: [s.openGithub, s.later],
         defaultId: 0,
         cancelId: 1,
       });
@@ -167,33 +241,32 @@ export async function checkForUpdatesInteractive(parentWindow: BrowserWindow | n
 
     const response = await showDialog(parentWindow, {
       type: 'info',
-      title: 'Mise à jour disponible',
-      message: `Une nouvelle version (${latestVersion}) est disponible.\n\nVersion actuelle : ${currentVersion}`,
-      detail: 'Voulez-vous télécharger et installer la mise à jour ?',
-      buttons: ['Télécharger', 'Plus tard'],
+      title: s.updateAvailable,
+      message: s.updateMessage(latestVersion, currentVersion),
+      detail: s.askDownload,
+      buttons: [s.download, s.later],
       defaultId: 0,
       cancelId: 1,
     });
 
     if (response.response === 0) {
-      // User chose to download
       await showDialog(parentWindow, {
         type: 'info',
-        title: 'Téléchargement en cours',
-        message: 'La mise à jour va être téléchargée en arrière-plan.',
-        detail: "L'application vous notifiera lorsque l'installation sera prête.",
-        buttons: ['OK'],
+        title: s.downloadInProgress,
+        message: s.downloadInBackground,
+        detail: s.downloadNotify,
+        buttons: [s.ok],
       });
       await autoUpdater.downloadUpdate();
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Erreur inconnue';
+    const message = err instanceof Error ? err.message : s.unknownError;
     await showDialog(parentWindow, {
       type: 'error',
-      title: 'Erreur de mise à jour',
-      message: 'Impossible de vérifier les mises à jour.',
+      title: s.updateError,
+      message: s.cantCheck,
       detail: message,
-      buttons: ['OK'],
+      buttons: [s.ok],
     });
   }
 }
@@ -204,6 +277,7 @@ export function setupUpdateDownloadedPrompt(getWindow: () => BrowserWindow | nul
   downloadPromptInitialized = true;
 
   autoUpdater.on('update-downloaded', async (info: UpdateInfo) => {
+    const s = tr();
     // On unsigned macOS builds the swap-on-restart will silently fail and
     // relaunch the old version. Don't pretend it works — point at GitHub
     // instead. (Belt-and-suspenders: the interactive check already short-
@@ -213,12 +287,10 @@ export function setupUpdateDownloadedPrompt(getWindow: () => BrowserWindow | nul
       const parentWindow = getWindow();
       const response = await showDialog(parentWindow, {
         type: 'info',
-        title: 'Mise à jour prête',
-        message: `La version ${info.version} a été téléchargée.`,
-        detail:
-          "Téléchargez le nouvel installateur depuis GitHub pour terminer la mise à jour.\n\n" +
-          "(L'installation automatique sur macOS requiert une signature Apple Developer, pas encore en place pour ce projet.)",
-        buttons: ['Ouvrir GitHub', 'Plus tard'],
+        title: s.updateReady,
+        message: s.versionDownloaded(info.version),
+        detail: s.macInstallReadyDetail,
+        buttons: [s.openGithub, s.later],
         defaultId: 0,
         cancelId: 1,
       });
@@ -231,10 +303,10 @@ export function setupUpdateDownloadedPrompt(getWindow: () => BrowserWindow | nul
     const parentWindow = getWindow();
     const response = await showDialog(parentWindow, {
       type: 'info',
-      title: 'Mise à jour prête',
-      message: `La version ${info.version} a été téléchargée.`,
-      detail: "L'application doit redémarrer pour appliquer la mise à jour.",
-      buttons: ['Redémarrer maintenant', 'Plus tard'],
+      title: s.updateReady,
+      message: s.versionDownloaded(info.version),
+      detail: s.restartToApply,
+      buttons: [s.restartNow, s.later],
       defaultId: 0,
       cancelId: 1,
     });

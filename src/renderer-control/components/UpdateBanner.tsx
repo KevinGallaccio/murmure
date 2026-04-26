@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { UpdateStatus } from '../../shared/ipc';
 import { useT } from '../i18n';
-import { IconClose, IconExternal, IconRefresh } from './Icons';
+import { IconClose, IconExternal, IconParty, IconRefresh } from './Icons';
 
 const DISMISSED_PREFIX = 'murmure.update.dismissed.';
 // Detect the manual-only macOS flow once; the renderer doesn't otherwise
@@ -40,122 +40,105 @@ export function UpdateBanner(): JSX.Element | null {
     setDismissedVersion(versionInPlay ?? null);
   };
 
+  const view = bannerView(status, t);
+
   return (
     <div className={`update-banner update-banner-${status.type}`} role="status">
-      <BannerBody status={status} t={t} />
-      <BannerActions status={status} t={t} onDismiss={dismiss} />
+      <button
+        type="button"
+        className="update-banner-dismiss"
+        onClick={dismiss}
+        aria-label={t.update.dismiss}
+        title={t.update.dismiss}
+      >
+        <IconClose size={10} />
+      </button>
+
+      <div className="update-banner-head">
+        <span className="update-banner-icon" aria-hidden="true">
+          {view.icon}
+        </span>
+        <h3 className="update-banner-title">{view.title}</h3>
+      </div>
+
+      {view.body && <p className="update-banner-body">{view.body}</p>}
+
+      {status.type === 'downloading' && (
+        <div className="update-banner-progress" aria-hidden="true">
+          <div
+            className="update-banner-progress-fill"
+            style={{ width: `${status.percent}%` }}
+          />
+        </div>
+      )}
+
+      {view.cta && (
+        <button type="button" className="update-banner-cta" onClick={view.cta.onClick}>
+          {view.cta.icon}
+          <span>{view.cta.label}</span>
+        </button>
+      )}
     </div>
   );
 }
 
-function BannerBody({ status, t }: { status: UpdateStatus; t: ReturnType<typeof useT> }): JSX.Element {
+type BannerView = {
+  icon: JSX.Element;
+  title: string;
+  body: string | null;
+  cta: { label: string; onClick: () => void; icon?: JSX.Element } | null;
+};
+
+function bannerView(status: UpdateStatus, t: ReturnType<typeof useT>): BannerView {
   switch (status.type) {
     case 'available':
-      return (
-        <div className="update-banner-text">
-          <div className="update-banner-title">{t.update.available(status.version)}</div>
-        </div>
-      );
+      return {
+        icon: <IconParty size={14} />,
+        title: t.update.availableTitle,
+        body: t.update.availableBody(status.version),
+        cta: isManualMacFlow
+          ? {
+              label: t.update.viewReleaseNotes,
+              icon: <IconExternal size={12} />,
+              onClick: () => void window.diffuseur.update.openReleases(),
+            }
+          : {
+              label: t.update.downloadInstall,
+              icon: <IconExternal size={12} />,
+              onClick: () => void window.diffuseur.update.download(),
+            },
+      };
     case 'downloading':
-      return (
-        <div className="update-banner-text">
-          <div className="update-banner-title">{t.update.downloading(status.percent)}</div>
-          <div className="update-banner-progress" aria-hidden="true">
-            <div className="update-banner-progress-fill" style={{ width: `${status.percent}%` }} />
-          </div>
-        </div>
-      );
+      return {
+        icon: <IconRefresh size={14} />,
+        title: t.update.downloadingTitle,
+        body: t.update.downloadingBody(status.percent),
+        cta: null,
+      };
     case 'downloaded':
-      return (
-        <div className="update-banner-text">
-          <div className="update-banner-title">{t.update.readyToRestart}</div>
-        </div>
-      );
+      return {
+        icon: <IconParty size={14} />,
+        title: t.update.readyTitle,
+        body: t.update.readyBody,
+        cta: {
+          label: t.update.restartNow,
+          onClick: () => void window.diffuseur.update.install(),
+        },
+      };
     case 'error':
-      return (
-        <div className="update-banner-text">
-          <div className="update-banner-title">{t.update.failed}</div>
-        </div>
-      );
+      return {
+        icon: <IconRefresh size={14} />,
+        title: t.update.failedTitle,
+        body: t.update.failedBody,
+        cta: {
+          label: t.update.retry,
+          icon: <IconRefresh size={12} />,
+          onClick: () => void window.diffuseur.update.download(),
+        },
+      };
     default:
-      return <div className="update-banner-text" />;
+      return { icon: <IconParty size={14} />, title: '', body: null, cta: null };
   }
-}
-
-function BannerActions({
-  status,
-  t,
-  onDismiss,
-}: {
-  status: UpdateStatus;
-  t: ReturnType<typeof useT>;
-  onDismiss: () => void;
-}): JSX.Element {
-  const dismissBtn = (
-    <button
-      type="button"
-      className="update-banner-dismiss"
-      onClick={onDismiss}
-      aria-label={t.update.dismiss}
-      title={t.update.dismiss}
-    >
-      <IconClose size={11} />
-    </button>
-  );
-
-  // Useful action depends on platform + state. macOS without Developer ID
-  // can't swap-on-restart, so we send the user to GitHub instead of
-  // attempting an install that would silently fall back to the old binary.
-  if (status.type === 'available') {
-    return (
-      <div className="update-banner-actions">
-        <button
-          type="button"
-          className="update-banner-cta"
-          onClick={() => {
-            if (isManualMacFlow) void window.diffuseur.update.openReleases();
-            else void window.diffuseur.update.download();
-          }}
-        >
-          {isManualMacFlow ? <IconExternal size={11} /> : null}
-          {isManualMacFlow ? t.update.viewReleaseNotes : t.update.downloadInstall}
-        </button>
-        {dismissBtn}
-      </div>
-    );
-  }
-  if (status.type === 'downloaded') {
-    return (
-      <div className="update-banner-actions">
-        <button
-          type="button"
-          className="update-banner-cta"
-          onClick={() => void window.diffuseur.update.install()}
-        >
-          {t.update.restartNow}
-        </button>
-        {dismissBtn}
-      </div>
-    );
-  }
-  if (status.type === 'error') {
-    return (
-      <div className="update-banner-actions">
-        <button
-          type="button"
-          className="update-banner-cta"
-          onClick={() => void window.diffuseur.update.download()}
-        >
-          <IconRefresh size={11} />
-          {t.update.retry}
-        </button>
-        {dismissBtn}
-      </div>
-    );
-  }
-  // Downloading — only allow dismiss (download keeps going in main; user
-  // can come back to it via the menu's "Check for Updates" if they dismiss).
-  return <div className="update-banner-actions">{dismissBtn}</div>;
 }
 
 function shouldShow(status: UpdateStatus): boolean {

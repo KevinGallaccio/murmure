@@ -145,14 +145,18 @@ export type Messages = {
   languagePill: { tooltip: string };
   themeToggle: { tooltip: string };
   update: {
-    available: (version: string) => string;
+    availableTitle: string;
+    availableBody: (version: string) => string;
     viewReleaseNotes: string;
     downloadInstall: string;
-    downloading: (percent: number) => string;
-    readyToRestart: string;
+    downloadingTitle: string;
+    downloadingBody: (percent: number) => string;
+    readyTitle: string;
+    readyBody: string;
     restartNow: string;
     dismiss: string;
-    failed: string;
+    failedTitle: string;
+    failedBody: string;
     retry: string;
   };
 };
@@ -327,14 +331,18 @@ const fr: Messages = {
   languagePill: { tooltip: 'Changer de langue' },
   themeToggle: { tooltip: 'Changer le thème' },
   update: {
-    available: (v) => `Mise à jour disponible · v${v}`,
+    availableTitle: 'Mise à jour disponible',
+    availableBody: (v) => `murmure ${v} est disponible !`,
     viewReleaseNotes: 'Voir sur GitHub',
     downloadInstall: 'Télécharger',
-    downloading: (p) => `Téléchargement… ${Math.round(p)}%`,
-    readyToRestart: 'Prête à installer',
+    downloadingTitle: 'Téléchargement…',
+    downloadingBody: (p) => `${Math.round(p)} %`,
+    readyTitle: 'Prête à installer',
+    readyBody: 'Redémarrez pour appliquer la nouvelle version.',
     restartNow: 'Redémarrer',
     dismiss: 'Ignorer',
-    failed: 'Échec de la mise à jour',
+    failedTitle: 'Échec de la mise à jour',
+    failedBody: 'Réessayez dans un instant.',
     retry: 'Réessayer',
   },
 };
@@ -509,14 +517,18 @@ const en: Messages = {
   languagePill: { tooltip: 'Switch language' },
   themeToggle: { tooltip: 'Switch theme' },
   update: {
-    available: (v) => `Update available · v${v}`,
+    availableTitle: 'Update available',
+    availableBody: (v) => `murmure ${v} is now live!`,
     viewReleaseNotes: 'View on GitHub',
     downloadInstall: 'Download',
-    downloading: (p) => `Downloading… ${Math.round(p)}%`,
-    readyToRestart: 'Ready to install',
+    downloadingTitle: 'Downloading…',
+    downloadingBody: (p) => `${Math.round(p)}%`,
+    readyTitle: 'Ready to install',
+    readyBody: 'Restart to apply the new version.',
     restartNow: 'Restart',
     dismiss: 'Dismiss',
-    failed: 'Update failed',
+    failedTitle: 'Update failed',
+    failedBody: 'Try again in a moment.',
     retry: 'Retry',
   },
 };

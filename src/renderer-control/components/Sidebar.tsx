@@ -80,12 +80,14 @@ export function Sidebar({
         );
       })}
 
-      <div className="sidebar-foot">
+      <div className="sidebar-bottom">
         <UpdateBanner />
-        <div className="status-row">
-          <span className={`dot ${broadcastDot}`} aria-hidden="true" />
-          <span>{broadcastText}</span>
-        </div>
+
+        <div className="sidebar-foot">
+          <div className="status-row">
+            <span className={`dot ${broadcastDot}`} aria-hidden="true" />
+            <span>{broadcastText}</span>
+          </div>
         <div className="status-row">
           <span className={`dot ${displayOpen ? 'ok' : 'idle'}`} aria-hidden="true" />
           <span>
@@ -119,6 +121,7 @@ export function Sidebar({
               <IconMoon size={12} />
             </span>
           </button>
+        </div>
         </div>
       </div>
     </aside>

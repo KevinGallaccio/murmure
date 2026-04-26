@@ -10,7 +10,15 @@ files:
 asar: true
 mac:
   target:
+    # The .dmg is the user-facing installer (downloaded from the Releases page).
     - target: dmg
+      arch:
+        - universal
+    # The .zip is required by electron-updater for in-place auto-updates on
+    # macOS — a running .app can't be atomically replaced from a mounted .dmg,
+    # so the updater downloads and unpacks the .zip instead. Without this,
+    # auto-update fails with "ZIP file not provided".
+    - target: zip
       arch:
         - universal
   category: public.app-category.utilities

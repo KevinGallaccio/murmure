@@ -6,6 +6,7 @@ import { SetupPage, type LogEntry } from './components/SetupPage';
 import { useLocale } from './i18n';
 import type {
   ApiKeyTestResult,
+  AssemblyConfigPayload,
   DisplayInfo,
   DisplayState,
   LanguageChoice,
@@ -77,6 +78,11 @@ declare global {
       };
       tab: {
         onNavigate: (cb: (t: Tab) => void) => () => void;
+      };
+      assembly: {
+        get: () => Promise<AssemblyConfigPayload>;
+        set: (cfg: AssemblyConfigPayload) => Promise<AssemblyConfigPayload>;
+        onChange: (cb: (cfg: AssemblyConfigPayload) => void) => () => void;
       };
     };
   }
@@ -161,6 +167,20 @@ export function App(): JSX.Element {
   const [finalLines, setFinalLines] = useState<string[]>([]);
   const [partial, setPartial] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState(false);
+  const [assemblyConfig, setAssemblyConfigState] = useState<AssemblyConfigPayload>({
+    forceEndpointMs: 5000,
+  });
+
+  useEffect(() => {
+    void window.diffuseur.assembly.get().then(setAssemblyConfigState);
+    const off = window.diffuseur.assembly.onChange(setAssemblyConfigState);
+    return off;
+  }, []);
+
+  const onAssemblyConfigChange = useCallback((cfg: AssemblyConfigPayload) => {
+    setAssemblyConfigState(cfg);
+    void window.diffuseur.assembly.set(cfg);
+  }, []);
 
   const captureRef = useRef<AudioCapture | null>(null);
   const streamStateRef = useRef<StreamState>('idle');
@@ -410,6 +430,8 @@ export function App(): JSX.Element {
               onApiKeyStatusChange={() => {
                 /* status surfaced inline within ApiKeyForm; not yet promoted to sidebar badge */
               }}
+              assemblyConfig={assemblyConfig}
+              onAssemblyConfigChange={onAssemblyConfigChange}
             />
           )}
         </main>

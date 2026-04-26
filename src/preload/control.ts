@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type {
   ApiKeyStatus,
   ApiKeyTestResult,
+  AssemblyConfigPayload,
   DisplayInfo,
   DisplayState,
   LanguageChoice,
@@ -85,6 +86,13 @@ const api = {
   },
   tab: {
     onNavigate: (cb: (t: Tab) => void) => subscribe<Tab>(IPC.TabNavigate, cb),
+  },
+  assembly: {
+    get: (): Promise<AssemblyConfigPayload> => ipcRenderer.invoke(IPC.AssemblyConfigGet),
+    set: (cfg: AssemblyConfigPayload): Promise<AssemblyConfigPayload> =>
+      ipcRenderer.invoke(IPC.AssemblyConfigSet, cfg),
+    onChange: (cb: (cfg: AssemblyConfigPayload) => void) =>
+      subscribe<AssemblyConfigPayload>(IPC.AssemblyConfigChanged, cb),
   },
 };
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import type { LanguageChoice, UsageUpdate } from '../../shared/ipc';
+import type { AssemblyConfigPayload, LanguageChoice, UsageUpdate } from '../../shared/ipc';
 import { useT } from '../i18n';
 import { IconCheck, IconExternal, IconEye, IconEyeOff, IconRefresh } from './Icons';
 
@@ -22,6 +22,8 @@ type Props = {
   onSetRate: (rate: number) => void;
   onOpenDashboard: () => void;
   onApiKeyStatusChange: (status: ApiKeyStatus) => void;
+  assemblyConfig: AssemblyConfigPayload;
+  onAssemblyConfigChange: (cfg: AssemblyConfigPayload) => void;
 };
 
 export function SetupPage({
@@ -38,6 +40,8 @@ export function SetupPage({
   onSetRate,
   onOpenDashboard,
   onApiKeyStatusChange,
+  assemblyConfig,
+  onAssemblyConfigChange,
 }: Props): JSX.Element {
   const t = useT();
 
@@ -111,6 +115,44 @@ export function SetupPage({
           <Field label={t.setup.levelLabel} style={{ marginTop: 16 }}>
             <VuMeter level={rms} />
           </Field>
+        </div>
+
+        {/* Transcription tuning */}
+        <div className="card full">
+          <div className="setup-row top">
+            <div>
+              <h3 className="card-title">{t.setup.tuningTitle}</h3>
+              <p className="card-sub">{t.setup.tuningSub}</p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end' }}>
+              <div className="label" style={{ alignSelf: 'flex-start' }}>{t.setup.tuningLabel}</div>
+              <div className="seg">
+                {(
+                  [
+                    { v: null, label: t.setup.tuningOptionOff },
+                    { v: 3000, label: t.setup.tuningOptionFast },
+                    { v: 5000, label: t.setup.tuningOptionDefault },
+                    { v: 7000, label: t.setup.tuningOptionRelaxed },
+                  ] as const
+                ).map((o) => {
+                  const active = assemblyConfig.forceEndpointMs === o.v;
+                  return (
+                    <button
+                      key={String(o.v)}
+                      type="button"
+                      className={active ? 'active' : ''}
+                      onClick={() => onAssemblyConfigChange({ forceEndpointMs: o.v })}
+                    >
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="card-sub" style={{ margin: 0, maxWidth: 360, textAlign: 'right' }}>
+                {t.setup.tuningHelp}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Costs */}

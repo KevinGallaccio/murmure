@@ -10,12 +10,24 @@ export type SessionRecord = {
   seconds: number;
 };
 
+export type AssemblyConfig = {
+  // Watchdog: if a turn keeps growing for this long (ms) without a final,
+  // send ForceEndpoint to commit the current partial. null = disabled, rely
+  // entirely on natural end-of-turn detection. 0 < n < 60_000 are valid.
+  forceEndpointMs: number | null;
+};
+
+export const DEFAULT_ASSEMBLY_CONFIG: AssemblyConfig = {
+  forceEndpointMs: 5000,
+};
+
 export type PersistedState = {
   apiKey: { ciphertext: string } | null;
   selectedDeviceId: string | null;
   style: StyleSettings;
   theme: Theme;
   language: LanguageChoice;
+  assembly: AssemblyConfig;
   usage: {
     totalSeconds: number;
     sessions: SessionRecord[];
@@ -30,6 +42,7 @@ const initialState: PersistedState = {
   style: DEFAULT_STYLE,
   theme: 'light',
   language: 'auto',
+  assembly: DEFAULT_ASSEMBLY_CONFIG,
   usage: {
     totalSeconds: 0,
     sessions: [],
@@ -167,4 +180,14 @@ export function resolveLocale(choice: LanguageChoice = getLanguageChoice()): Res
   // French region setting).
   const sys = (app.getSystemLocale?.() || app.getLocale() || '').toLowerCase();
   return sys.startsWith('fr') ? 'fr' : 'en';
+}
+
+export function getAssemblyConfig(): AssemblyConfig {
+  return { ...DEFAULT_ASSEMBLY_CONFIG, ...(store.get('assembly') ?? {}) };
+}
+
+export function setAssemblyConfig(partial: Partial<AssemblyConfig>): AssemblyConfig {
+  const next = { ...getAssemblyConfig(), ...partial };
+  store.set('assembly', next);
+  return next;
 }

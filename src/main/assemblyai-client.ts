@@ -1,11 +1,7 @@
 import WebSocket from 'ws';
-import {
-  ASSEMBLY_PARAMS,
-  ASSEMBLY_WS_BASE,
-  FORCE_ENDPOINT_MS,
-  RECONNECT_BACKOFF_MS,
-} from '../shared/constants';
+import { ASSEMBLY_PARAMS, ASSEMBLY_WS_BASE, RECONNECT_BACKOFF_MS } from '../shared/constants';
 import type { StreamErrorPayload, StreamState, TranscriptFinal, TranscriptPartial } from '../shared/ipc';
+import { getAssemblyConfig } from './settings';
 
 export type AssemblyAIClientCallbacks = {
   onStateChange: (state: StreamState) => void;
@@ -274,6 +270,10 @@ export class AssemblyAIClient {
 
   private scheduleForceEndpoint(): void {
     this.clearForceEndpoint();
+    // Read the threshold each schedule so changes from the Setup UI take
+    // effect on the next turn without needing to reconnect.
+    const ms = getAssemblyConfig().forceEndpointMs;
+    if (ms === null || ms <= 0) return; // user disabled the watchdog
     this.forceEndpointTimer = setTimeout(() => {
       this.forceEndpointTimer = null;
       if (this.ws && this.ws.readyState === WebSocket.OPEN && this.state === 'streaming') {
@@ -283,7 +283,7 @@ export class AssemblyAIClient {
           console.error('[murmure] ForceEndpoint send failed', err);
         }
       }
-    }, FORCE_ENDPOINT_MS);
+    }, ms);
   }
 
   private clearForceEndpoint(): void {

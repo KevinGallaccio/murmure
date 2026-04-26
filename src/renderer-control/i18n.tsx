@@ -126,6 +126,14 @@ export type Messages = {
     logSub: string;
     logEmpty: string;
     logClear: string;
+    tuningTitle: string;
+    tuningSub: string;
+    tuningLabel: string;
+    tuningOptionOff: string;
+    tuningOptionFast: string;
+    tuningOptionDefault: string;
+    tuningOptionRelaxed: string;
+    tuningHelp: string;
   };
   log: {
     streamState: (state: string) => string;
@@ -271,6 +279,16 @@ const fr: Messages = {
     logSub: 'Événements récents de cette session.',
     logEmpty: 'Aucun événement.',
     logClear: 'Effacer',
+    tuningTitle: 'Réglage de la transcription',
+    tuningSub:
+      "Pour les orateurs qui parlent vite sans pauses : on force AssemblyAI à valider le texte en cours après ce délai, pour que le public voie le texte défiler plutôt que d'attendre la prochaine respiration.",
+    tuningLabel: 'Validation forcée',
+    tuningOptionOff: 'Désactivée',
+    tuningOptionFast: 'Rapide · 3 s',
+    tuningOptionDefault: 'Par défaut · 5 s',
+    tuningOptionRelaxed: 'Patient · 7 s',
+    tuningHelp:
+      "Plus court = texte plus réactif mais peut couper des mots. Plus long = phrases plus complètes mais l'audience attend davantage. Désactivé = on s'en remet à la détection naturelle de fin de phrase d'AssemblyAI.",
   },
   log: {
     streamState: (state) => `État du flux: ${state}`,
@@ -419,6 +437,16 @@ const en: Messages = {
     logSub: 'Recent events from this session.',
     logEmpty: 'No events yet.',
     logClear: 'Clear',
+    tuningTitle: 'Transcription tuning',
+    tuningSub:
+      "For speakers who talk fast without pausing: force AssemblyAI to commit the in-flight text after this delay, so the audience sees the transcript scroll forward instead of waiting for the next breath.",
+    tuningLabel: 'Force-commit',
+    tuningOptionOff: 'Off',
+    tuningOptionFast: 'Fast · 3 s',
+    tuningOptionDefault: 'Default · 5 s',
+    tuningOptionRelaxed: 'Patient · 7 s',
+    tuningHelp:
+      "Shorter = more responsive text, but can cut words. Longer = more complete sentences, but the audience waits more. Off = rely entirely on AssemblyAI's natural end-of-turn detection.",
   },
   log: {
     streamState: (state) => `Stream state: ${state}`,

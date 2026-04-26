@@ -76,6 +76,11 @@ export const IPC = {
   // Main → renderer: instructs the operator UI to switch to a specific
   // tab (e.g. when the user clicks "Settings…" in the native menu).
   TabNavigate: 'tab:navigate',
+
+  // AssemblyAI tuning (force-endpoint watchdog and any future knobs).
+  AssemblyConfigGet: 'assembly:config:get',
+  AssemblyConfigSet: 'assembly:config:set',
+  AssemblyConfigChanged: 'assembly:config:changed',
 } as const;
 
 export type StyleUpdate = Partial<StyleSettings>;
@@ -96,4 +101,8 @@ export type Tab = 'stage' | 'appearance' | 'setup';
 export type LanguageState = {
   choice: LanguageChoice;
   resolved: ResolvedLocale;
+};
+
+export type AssemblyConfigPayload = {
+  forceEndpointMs: number | null;
 };

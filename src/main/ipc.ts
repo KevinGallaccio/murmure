@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain, screen, shell } from 'electron';
 import {
   IPC,
   type ApiKeyTestResult,
+  type AssemblyConfigPayload,
   type DisplayState,
   type LanguageChoice,
   type LanguageState,
@@ -14,6 +15,7 @@ import { ASSEMBLY_DASHBOARD_URL } from '../shared/constants';
 import {
   clearApiKey,
   getApiKey,
+  getAssemblyConfig,
   getLanguageChoice,
   getStyleSettings,
   getTheme,
@@ -21,6 +23,7 @@ import {
   resetStyle,
   resolveLocale,
   saveApiKey,
+  setAssemblyConfig,
   setLanguageChoice,
   setTheme,
   updateStyle,
@@ -265,6 +268,13 @@ export function registerIpc(controlWindow: BrowserWindow): void {
     broadcast(IPC.LanguageChanged, state);
     languageChangeListeners.forEach((cb) => cb(state));
     return state;
+  });
+
+  ipcMain.handle(IPC.AssemblyConfigGet, () => getAssemblyConfig());
+  ipcMain.handle(IPC.AssemblyConfigSet, (_e, payload: AssemblyConfigPayload) => {
+    const next = setAssemblyConfig(payload);
+    broadcast(IPC.AssemblyConfigChanged, next);
+    return next;
   });
 
   // Escape exits the display fullscreen, listened on each window's webContents.

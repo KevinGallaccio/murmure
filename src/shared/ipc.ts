@@ -23,11 +23,28 @@ export type DisplayInfo = {
   bounds: { x: number; y: number; width: number; height: number };
 };
 
+export type Provider = 'assemblyai' | 'speechmatics';
+
+export type ProviderState = { provider: Provider };
+
+export type TranscriptionLanguage = 'fr' | 'en';
+
+export type TranscriptionLanguageState = { language: TranscriptionLanguage };
+
 export type ApiKeyStatus = { hasKey: boolean };
 
 export type ApiKeyTestResult = { ok: boolean; error?: string };
 
 export const IPC = {
+  ProviderGet: 'provider:get',
+  ProviderSet: 'provider:set',
+  ProviderChanged: 'provider:changed',
+  ProviderOpenSignup: 'provider:open-signup',
+
+  TranscriptionLanguageGet: 'transcription-language:get',
+  TranscriptionLanguageSet: 'transcription-language:set',
+  TranscriptionLanguageChanged: 'transcription-language:changed',
+
   ApiKeySave: 'apikey:save',
   ApiKeyTest: 'apikey:test',
   ApiKeyClear: 'apikey:clear',

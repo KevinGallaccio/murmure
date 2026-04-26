@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { LanguageChoice, ResolvedLocale } from '../shared/ipc';
+import type { LanguageChoice, Provider, ResolvedLocale } from '../shared/ipc';
 
 export type Locale = ResolvedLocale;
 
@@ -97,9 +97,18 @@ export type Messages = {
     languageEnglish: string;
     languageFrench: string;
     languageAuto: string;
-    keyTitle: string;
-    keySub: string;
-    keyPlaceholder: string;
+    transcriptionLanguageTitle: string;
+    transcriptionLanguageSub: string;
+    transcriptionLanguageFr: string;
+    transcriptionLanguageEn: string;
+    providerTitle: string;
+    providerSub: string;
+    providerAssembly: string;
+    providerSpeechmatics: string;
+    keyTitle: Record<Provider, string>;
+    keySub: Record<Provider, string>;
+    keyPlaceholder: Record<Provider, string>;
+    keyGetAccount: Record<Provider, string>;
     save: string;
     test: string;
     testing: string;
@@ -166,7 +175,7 @@ const fr: Messages = {
     titleA: 'Rendre la parole ',
     titleEm: 'lisible',
     titleB: '.',
-    sub: "Ouvrez l'écran d'audience, cliquez sur diffuser, puis suivez la transcription en direct ici comme elle apparaît dans la salle.",
+    sub: "Ouvrez l'écran d'audience, lancez la diffusion, puis suivez ici la transcription en direct, telle qu'elle apparaît dans la salle.",
     sessionLabel: 'Session',
     rateSuffix: '$/h',
     startBroadcast: 'Démarrer la diffusion',
@@ -174,8 +183,8 @@ const fr: Messages = {
     monitorTitle: 'Ce que voit le public',
     monitorIdle: 'aperçu',
     monitorLive: 'en direct',
-    setupNeededTitle: 'Configuration en une fois',
-    setupNeededBody: "Il vous faut une clé AssemblyAI et un microphone avant de diffuser. Configurez-les dans l'onglet ",
+    setupNeededTitle: 'Configuration unique',
+    setupNeededBody: "Une clé API et un microphone sont nécessaires avant de diffuser. Configurez-les dans l'onglet ",
     setupNeededLink: 'Réglages',
   },
   appearance: {
@@ -183,7 +192,7 @@ const fr: Messages = {
     titleA: 'Ce que voit votre ',
     titleEm: 'audience',
     titleB: '.',
-    sub: "Réglez l'écran d'audience pour qu'il fonctionne pour le dernier rang. Les modifications s'appliquent en direct.",
+    sub: "Réglez l'écran d'audience pour qu'il reste lisible depuis le dernier rang. Les modifications s'appliquent en direct.",
     previewTitle: 'Aperçu pour le public',
     previewMeta: "reflète exactement l'écran d'audience",
     presetsTitle: 'Presets',
@@ -236,33 +245,56 @@ const fr: Messages = {
     titleA: 'Configuration ',
     titleEm: 'unique',
     titleB: '.',
-    sub: 'Collez votre clé AssemblyAI, choisissez un microphone, surveillez les coûts. Tout reste sur cette machine.',
+    sub: "Choisissez un fournisseur de transcription, collez votre clé, sélectionnez un microphone. Tout reste sur cette machine.",
     languageTitle: "Langue de l'interface",
-    languageSub: "Interface opérateur uniquement. La langue de transcription se règle dans shared/constants.ts.",
+    languageSub: "Affecte uniquement l'interface opérateur. La langue de transcription se règle juste en dessous.",
     languageEnglish: 'English',
     languageFrench: 'Français',
     languageAuto: 'Auto · langue du système',
-    keyTitle: 'Clé AssemblyAI',
-    keySub: "Chiffrée au repos dans le trousseau du système. Envoyée uniquement à AssemblyAI.",
-    keyPlaceholder: 'Coller votre clé AssemblyAI ici…',
+    transcriptionLanguageTitle: 'Langue de transcription',
+    transcriptionLanguageSub:
+      "La langue parlée par les intervenants. À régler avant chaque diffusion : un changement interrompt la session en cours.",
+    transcriptionLanguageFr: 'Français',
+    transcriptionLanguageEn: 'English',
+    providerTitle: 'Fournisseur de transcription',
+    providerSub:
+      "Speechmatics excelle dans la transcription de la parole continue (interviews en direct, débats sans pause) et offre 480 minutes gratuites par mois. AssemblyAI reste disponible en alternative.",
+    providerAssembly: 'AssemblyAI',
+    providerSpeechmatics: 'Speechmatics',
+    keyTitle: {
+      assemblyai: 'Clé AssemblyAI',
+      speechmatics: 'Clé Speechmatics',
+    },
+    keySub: {
+      assemblyai: "Conservée chiffrée dans le trousseau de votre système. Jamais transmise ailleurs qu'à AssemblyAI.",
+      speechmatics: "Conservée chiffrée dans le trousseau de votre système. Jamais transmise ailleurs qu'à Speechmatics.",
+    },
+    keyPlaceholder: {
+      assemblyai: 'Collez votre clé AssemblyAI ici…',
+      speechmatics: 'Collez votre clé Speechmatics ici…',
+    },
+    keyGetAccount: {
+      assemblyai: 'Pas encore de compte AssemblyAI ?',
+      speechmatics: 'Pas encore de compte Speechmatics ?',
+    },
     save: 'Enregistrer',
     test: 'Tester',
     testing: 'Vérification…',
     clear: 'Effacer',
-    keyValid: 'Clé valide · enregistrée dans le trousseau',
+    keyValid: 'Clé valide · enregistrée dans le trousseau du système',
     keyAbsent: 'Aucune clé enregistrée',
     keyInvalid: 'Clé invalide',
     audioTitle: 'Source audio',
     audioSub: 'Surveillez le vumètre pour vérifier que le micro reçoit du signal.',
     deviceLabel: "Périphérique d'entrée",
     deviceNone: 'Aucun périphérique détecté',
-    permissionDenied: 'Accès microphone refusé.',
+    permissionDenied: 'Accès au microphone refusé.',
     levelLabel: "Niveau d'entrée",
     costsTitle: 'Coûts & usage',
     costsSub: 'Estimation locale basée sur la durée de session.',
     sessionLabel: 'Session en cours',
     cumulLabel: 'Cumul estimé',
-    elapsed: (m, s) => `${m}m ${s}s écoulé`,
+    elapsed: (m, s) => `${m}m ${s}s écoulées`,
     hoursAndSessions: (h, n) => `${h} h · ${n} sessions`,
     rateLabel: 'Tarif ($/heure)',
     dashboard: 'Tableau de bord',
@@ -273,8 +305,8 @@ const fr: Messages = {
     logClear: 'Effacer',
   },
   log: {
-    streamState: (state) => `État du flux: ${state}`,
-    captureError: (msg) => `Capture audio: ${msg}`,
+    streamState: (state) => `État du flux : ${state}`,
+    captureError: (msg) => `Capture audio : ${msg}`,
     streamStartFailed: 'Démarrage impossible.',
   },
   toast: {
@@ -323,7 +355,7 @@ const en: Messages = {
     monitorIdle: 'idle preview',
     monitorLive: 'mirroring · live',
     setupNeededTitle: 'One-time setup',
-    setupNeededBody: "You'll need an AssemblyAI key and a microphone before broadcasting. Set them up under ",
+    setupNeededBody: "You'll need an API key and a microphone before broadcasting. Set them up under ",
     setupNeededLink: 'Setup',
   },
   appearance: {
@@ -384,15 +416,38 @@ const en: Messages = {
     titleA: 'One-time ',
     titleEm: 'configuration',
     titleB: '.',
-    sub: 'Paste your AssemblyAI key, pick a microphone, keep an eye on cost. Set it once and forget it — everything stays on this machine.',
+    sub: 'Pick a transcription provider, paste your key, choose a microphone. Everything stays on this machine.',
     languageTitle: 'Interface language',
-    languageSub: 'Operator UI only. Transcription language is set separately in shared/constants.ts.',
+    languageSub: 'Affects only the operator UI. The transcription language is set just below.',
     languageEnglish: 'English',
     languageFrench: 'Français',
     languageAuto: 'Auto · OS',
-    keyTitle: 'AssemblyAI key',
-    keySub: 'Encrypted at rest in your OS Keychain. Never sent anywhere except AssemblyAI.',
-    keyPlaceholder: 'Paste your AssemblyAI key here…',
+    transcriptionLanguageTitle: 'Transcription language',
+    transcriptionLanguageSub:
+      'The language spoken by the participants. Set this before each broadcast — changing it stops the active session.',
+    transcriptionLanguageFr: 'Français',
+    transcriptionLanguageEn: 'English',
+    providerTitle: 'Transcription provider',
+    providerSub:
+      'Speechmatics excels at continuous speech (live interviews, debates without pauses) and offers 480 free minutes per month. AssemblyAI is kept as an alternative.',
+    providerAssembly: 'AssemblyAI',
+    providerSpeechmatics: 'Speechmatics',
+    keyTitle: {
+      assemblyai: 'AssemblyAI key',
+      speechmatics: 'Speechmatics key',
+    },
+    keySub: {
+      assemblyai: 'Encrypted at rest in your OS Keychain. Never sent anywhere except AssemblyAI.',
+      speechmatics: 'Encrypted at rest in your OS Keychain. Never sent anywhere except Speechmatics.',
+    },
+    keyPlaceholder: {
+      assemblyai: 'Paste your AssemblyAI key here…',
+      speechmatics: 'Paste your Speechmatics key here…',
+    },
+    keyGetAccount: {
+      assemblyai: "Don't have an AssemblyAI account?",
+      speechmatics: "Don't have a Speechmatics account?",
+    },
     save: 'Save',
     test: 'Test',
     testing: 'Verifying…',

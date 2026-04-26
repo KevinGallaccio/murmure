@@ -10,12 +10,16 @@ import type {
   DisplayState,
   LanguageChoice,
   MockState,
+  Provider,
+  ProviderState,
   StreamErrorPayload,
   StreamState,
   Tab,
   Theme,
   TranscriptFinal,
   TranscriptPartial,
+  TranscriptionLanguage,
+  TranscriptionLanguageState,
   UsageUpdate,
 } from '../shared/ipc';
 import type { StyleSettings } from '../shared/style';
@@ -25,11 +29,22 @@ import { AudioCapture } from './audio/capture';
 declare global {
   interface Window {
     diffuseur: {
+      provider: {
+        get: () => Promise<ProviderState>;
+        set: (provider: Provider) => Promise<ProviderState>;
+        onChange: (cb: (s: ProviderState) => void) => () => void;
+        openSignup: (provider: Provider) => Promise<{ ok: boolean }>;
+      };
+      transcriptionLanguage: {
+        get: () => Promise<TranscriptionLanguageState>;
+        set: (language: TranscriptionLanguage) => Promise<TranscriptionLanguageState>;
+        onChange: (cb: (s: TranscriptionLanguageState) => void) => () => void;
+      };
       apikey: {
-        status: () => Promise<{ hasKey: boolean }>;
-        save: (plaintext: string) => Promise<{ hasKey: boolean }>;
-        clear: () => Promise<{ hasKey: boolean }>;
-        test: () => Promise<ApiKeyTestResult>;
+        status: (provider: Provider) => Promise<{ hasKey: boolean }>;
+        save: (provider: Provider, plaintext: string) => Promise<{ hasKey: boolean }>;
+        clear: (provider: Provider) => Promise<{ hasKey: boolean }>;
+        test: (provider: Provider) => Promise<ApiKeyTestResult>;
       };
       stream: {
         start: () => Promise<{ ok: boolean; error?: string }>;
@@ -161,6 +176,33 @@ export function App(): JSX.Element {
   const [finalLines, setFinalLines] = useState<string[]>([]);
   const [partial, setPartial] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState(false);
+  const [provider, setProviderState] = useState<Provider>('speechmatics');
+
+  useEffect(() => {
+    void window.diffuseur.provider.get().then((s) => setProviderState(s.provider));
+    const off = window.diffuseur.provider.onChange((s) => setProviderState(s.provider));
+    return off;
+  }, []);
+
+  const setProvider = useCallback((next: Provider) => {
+    setProviderState(next);
+    void window.diffuseur.provider.set(next);
+  }, []);
+
+  const [transcriptionLanguage, setTranscriptionLanguageState] = useState<TranscriptionLanguage>('fr');
+
+  useEffect(() => {
+    void window.diffuseur.transcriptionLanguage.get().then((s) => setTranscriptionLanguageState(s.language));
+    const off = window.diffuseur.transcriptionLanguage.onChange((s) =>
+      setTranscriptionLanguageState(s.language),
+    );
+    return off;
+  }, []);
+
+  const setTranscriptionLanguage = useCallback((next: TranscriptionLanguage) => {
+    setTranscriptionLanguageState(next);
+    void window.diffuseur.transcriptionLanguage.set(next);
+  }, []);
 
   const captureRef = useRef<AudioCapture | null>(null);
   const streamStateRef = useRef<StreamState>('idle');
@@ -188,9 +230,12 @@ export function App(): JSX.Element {
   /* ------- Bootstrap subscriptions ---------- */
 
   useEffect(() => {
+    void window.diffuseur.apikey.status(provider).then((r) => setHasKey(r.hasKey));
+  }, [provider]);
+
+  useEffect(() => {
     void window.diffuseur.style.get().then(setStyle);
     void window.diffuseur.display.list().then(setDisplays);
-    void window.diffuseur.apikey.status().then((r) => setHasKey(r.hasKey));
 
     const offState = window.diffuseur.stream.onState((s) => {
       setStreamState((prev) => {
@@ -235,10 +280,10 @@ export function App(): JSX.Element {
   // Poll API key status (in case ApiKeyForm changes it)
   useEffect(() => {
     const id = setInterval(() => {
-      void window.diffuseur.apikey.status().then((r) => setHasKey(r.hasKey));
+      void window.diffuseur.apikey.status(provider).then((r) => setHasKey(r.hasKey));
     }, 1500);
     return () => clearInterval(id);
-  }, []);
+  }, [provider]);
 
   // Session timer (1Hz tick for the visible counter)
   useEffect(() => {
@@ -397,6 +442,10 @@ export function App(): JSX.Element {
             <SetupPage
               language={language}
               setLanguage={setLanguage}
+              provider={provider}
+              setProvider={setProvider}
+              transcriptionLanguage={transcriptionLanguage}
+              setTranscriptionLanguage={setTranscriptionLanguage}
               usage={usage}
               rms={rms}
               selectedDeviceId={deviceId}

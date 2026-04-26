@@ -19,11 +19,11 @@
 
 ---
 
-**murmure** captures audio from a microphone, transcribes it in real time using AssemblyAI's Universal-3 Pro Streaming model, and projects the transcript full-screen onto a secondary monitor with typography you control. It's a small, focused desktop app for one job: making the spoken word readable in the room.
+**murmure** captures audio from a microphone, transcribes it in real time using your choice of [Speechmatics](https://www.speechmatics.com/) (default) or [AssemblyAI](https://www.assemblyai.com/), and projects the transcript full-screen onto a secondary monitor with typography you control. It's a small, focused desktop app for one job: making the spoken word readable in the room.
 
-The operator UI ships in French and English (auto-detected from your OS, switchable from a globe icon next to the version). The transcription engine is currently hard-coded to French (`language=fr`) — trivially changed in `src/shared/constants.ts`.
+The operator UI ships in French and English (auto-detected from your OS, switchable from a globe icon next to the version). The transcription language is selectable in **Réglages / Setup** (French and English in v1.2; more on request).
 
-It runs locally, talks directly to AssemblyAI, and stores nothing in the cloud.
+It runs locally, talks directly to your chosen STT provider, and stores nothing in the cloud.
 
 ---
 
@@ -31,7 +31,7 @@ It runs locally, talks directly to AssemblyAI, and stores nothing in the cloud.
 
 Live captioning at small events is usually expensive, technical, or both. The tools that do exist tend to assume a broadcast operator, a captioning workstation, and a software stack that costs more than the festival's coffee budget.
 
-**murmure** is the opposite: one laptop, one microphone, one HDMI cable to the audience screen, one AssemblyAI key. An operator can set it up in five minutes, and the audience reads the transcript in whatever font, size, and contrast suits the room.
+**murmure** is the opposite: one laptop, one microphone, one HDMI cable to the audience screen, one API key. An operator can set it up in five minutes, and the audience reads the transcript in whatever font, size, and contrast suits the room.
 
 If you're running a small French-language event and you'd like to make it accessible, this might be the simplest path.
 
@@ -64,7 +64,7 @@ These rough edges go away once the app is properly signed with a paid Apple Deve
 
 ## Develop
 
-You need [Node.js](https://nodejs.org/) (`brew install node` on macOS) and an [AssemblyAI](https://www.assemblyai.com/) API key.
+You need [Node.js](https://nodejs.org/) (`brew install node` on macOS) and an API key from one of the supported providers — [Speechmatics](https://portal.speechmatics.com/signup/) (recommended; 480 free real-time minutes/month) or [AssemblyAI](https://www.assemblyai.com/dashboard/signup).
 
 ```bash
 git clone https://github.com/KevinGallaccio/murmure.git
@@ -75,7 +75,7 @@ npm run dev
 
 Then in the app:
 
-1. Paste your AssemblyAI key under **Configuration / Configuration** and click **Tester la clé / Test key** to verify.
+1. Open **Réglages / Setup**, pick a provider (Speechmatics is the default), set the transcription language, then paste your API key and click **Tester / Test** to verify.
 2. Pick your microphone under **Source audio / Audio source** — the VU meter goes live as soon as a device is selected.
 3. Click **Ouvrir l'affichage / Open display** to spawn the audience-facing window. With a second monitor connected, it opens fullscreen there automatically.
 4. Click **Diffuser / Broadcast** to start streaming.
@@ -97,7 +97,7 @@ npm run dist:win    # produces dist-electron/*.exe (NSIS)
 ┌─────────────────────────────────────────────────────────────┐
 │                    Main process (Node)                      │
 │  • Window lifecycle (control + display)                     │
-│  • AssemblyAI WebSocket client                              │
+│  • STT WebSocket client (Speechmatics or AssemblyAI)        │
 │  • Encrypted settings (electron-store + safeStorage)        │
 │  • Session duration tracking → local cost estimate          │
 │  • IPC hub between the two renderers                        │
@@ -114,9 +114,9 @@ npm run dist:win    # produces dist-electron/*.exe (NSIS)
 └────────────────────────┘       └────────────────────────────┘
 ```
 
-Three processes, two windows, one WebSocket. Audio is captured in the control renderer (browser APIs: `getUserMedia` + an `AudioWorklet` that downsamples 48 kHz float → 16 kHz int16 PCM in ~100 ms chunks), forwarded to the main process over IPC, and streamed to AssemblyAI via `ws`. Transcripts come back, get broadcast to both renderers, and the display restyles in real time via CSS custom properties pushed over IPC.
+Three processes, two windows, one WebSocket. Audio is captured in the control renderer (browser APIs: `getUserMedia` + an `AudioWorklet` that downsamples 48 kHz float → 16 kHz int16 PCM in ~100 ms chunks), forwarded to the main process over IPC, and streamed to whichever STT provider is selected via `ws`. Both providers implement a small `STTClient` interface in `src/main/stt-client.ts`, so the audio path doesn't care which is active. Transcripts come back, get broadcast to both renderers, and the display restyles in real time via CSS custom properties pushed over IPC.
 
-The AssemblyAI key never enters the renderer's JS heap — it stays decrypted only in main, encrypted at rest via OS-level `safeStorage` (Keychain on macOS, DPAPI on Windows).
+API keys never enter the renderer's JS heap — they stay decrypted only in main, encrypted at rest per-provider via OS-level `safeStorage` (Keychain on macOS, DPAPI on Windows).
 
 The control window is a three-column workspace: a collapsible sidebar (Configuration / Source / Journal / Costs) on the left, the audience preview as a centered "stage" in the middle, and an always-visible Apparence inspector on the right. The pattern is borrowed from professional creative tools (Figma, Logic Pro): you tweak typography on the right and watch the result on the stage at the same time, never scrolling.
 
@@ -143,15 +143,18 @@ murmure/
 
 ## Configuration & cost
 
-AssemblyAI doesn't expose a public balance API, so murmure tracks streaming duration locally and estimates cost at a configurable rate (default $0.45/h, the U3 Pro Streaming base rate at time of writing). The figure under **Coûts & usage / Costs & usage** is *an estimate* — for the canonical number, click **Tableau de bord / Dashboard** to open AssemblyAI's billing page in your browser.
+Neither provider exposes a public balance API, so murmure tracks streaming duration locally and estimates cost at a per-provider configurable rate (Speechmatics $0.24/h, AssemblyAI $0.45/h — both the published base rates at time of writing). Switching providers updates the rate displayed in the cost card; per-provider customizations persist independently. The figure under **Coûts & usage / Costs & usage** is *an estimate* — for the canonical number, click **Tableau de bord / Dashboard** to open the active provider's billing portal in your browser.
 
 The display style — typeface, size, line height, colors, padding, alignment, max visible lines — is fully customizable from the inspector with a live preview. Three presets ship: **Grand contraste / High contrast** (high contrast for low-vision audiences), **Sobre / Subtle** (softer, longer reading sessions), and **Lecture longue / Long reading** (extended sessions with looser line spacing).
 
 Six typefaces ship bundled for the audience display (no remote fonts at runtime): Inter, Manrope, Atkinson Hyperlegible (the one designed by the Braille Institute for low-vision readers — recommended), IBM Plex Sans, Roboto Slab, and JetBrains Mono. The operator UI uses Fraunces for editorial titles and Manrope for body text.
 
-### Tuning end-of-turn detection
+### How each provider commits text
 
-AssemblyAI's streaming is turn-based: a final transcript commits when the model detects a silence pause. murmure ships with tightened defaults — `min_end_of_turn_silence_when_confident: 100 ms`, `max_turn_silence: 1400 ms` — so commits land on every breath/comma rather than only at long pauses. See `src/shared/constants.ts → ASSEMBLY_PARAMS` if you want to tune further.
+The two providers have different models for *when* a transcript becomes "final." Both produce the same audience experience in murmure (one line per sentence, with words fading in as they're recognized) but the mechanism differs:
+
+- **Speechmatics** emits partial transcripts continuously every ~500 ms while you're talking, regardless of silence, and commits a final every `max_delay` (we ship 1.5 s). This is the right choice for continuous speech — interviews, debates, fast monologues. murmure aggregates the per-window commits into sentence-bounded finals client-side so the audience sees one line per sentence rather than one line per 1-3 words.
+- **AssemblyAI** is turn-based: a final commits when the model detects a silence pause. murmure ships with tightened defaults — `min_end_of_turn_silence_when_confident: 100 ms`, `max_turn_silence: 1400 ms` — and a 5 s `ForceEndpoint` watchdog for monologues without natural pauses. See `src/shared/constants.ts → ASSEMBLY_PARAMS`.
 
 ---
 
@@ -173,6 +176,7 @@ Things explicitly out of scope: transcript export to file (live-only by design),
 
 ## Credits
 
+- [Speechmatics](https://www.speechmatics.com/) — real-time WebSocket API, broadcast model
 - [AssemblyAI](https://www.assemblyai.com/) — Universal-3 Pro Streaming model
 - [Atkinson Hyperlegible](https://brailleinstitute.org/freefont) — Braille Institute, designed for low-vision readers
 - [Electron](https://www.electronjs.org/), [Vite](https://vitejs.dev/), [React](https://react.dev/) — the boring-but-correct desktop stack

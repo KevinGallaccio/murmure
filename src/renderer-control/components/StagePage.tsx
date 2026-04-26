@@ -149,12 +149,19 @@ export function StagePage({
             )}
             <div className="monitor-text" style={monitorTextStyle}>
               {visibleLines.map((line, i) => (
-                <div key={`f-${i}`}>{line}</div>
+                <MonitorLine
+                  key={`f-${i}-${line.length}`}
+                  text={line}
+                  transitions={appearance.transitionsEnabled}
+                />
               ))}
               {partial && (
-                <span className="partial" style={{ color: appearance.liveColor }}>
-                  {partial}
-                </span>
+                <MonitorLine
+                  text={partial}
+                  partial
+                  color={appearance.liveColor}
+                  transitions={appearance.transitionsEnabled}
+                />
               )}
             </div>
           </div>
@@ -181,4 +188,44 @@ export function StagePage({
       </div>
     </div>
   );
+}
+
+function MonitorLine({
+  text,
+  partial,
+  color,
+  transitions,
+}: {
+  text: string;
+  partial?: boolean;
+  color?: string;
+  transitions: boolean;
+}): JSX.Element {
+  const tokens = tokenizeForStream(text);
+  const className = `monitor-line ${partial ? 'partial' : 'final'} ${transitions ? 'transition' : ''}`;
+  return (
+    <div className={className} style={color ? { color } : undefined}>
+      {tokens.map((tok, i) =>
+        tok.kind === 'word' ? (
+          <span
+            key={`${i}-${tok.text}`}
+            className={`stream-word ${transitions ? 'animate' : ''}`}
+          >
+            {tok.text}
+          </span>
+        ) : (
+          <span key={`s-${i}`}>{tok.text}</span>
+        ),
+      )}
+    </div>
+  );
+}
+
+type StreamToken = { kind: 'word' | 'space'; text: string };
+
+function tokenizeForStream(text: string): StreamToken[] {
+  const parts = text.split(/(\s+)/);
+  return parts
+    .filter((p) => p.length > 0)
+    .map((p) => ({ kind: /^\s+$/.test(p) ? ('space' as const) : ('word' as const), text: p }));
 }

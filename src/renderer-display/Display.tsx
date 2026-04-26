@@ -86,15 +86,11 @@ export function Display(): JSX.Element {
       ) : (
         <div className="display-text">
           {visibleLines.map((line) => (
-            <span
+            <StreamLine
               key={line.id + (line.partial ? ':p' : ':f')}
-              className={`display-line ${line.partial ? 'partial' : ''} ${
-                style.transitionsEnabled ? 'transition' : ''
-              }`}
-            >
-              {line.text}
-              {'\n'}
-            </span>
+              line={line}
+              transitions={style.transitionsEnabled}
+            />
           ))}
         </div>
       )}
@@ -103,6 +99,44 @@ export function Display(): JSX.Element {
       )}
     </div>
   );
+}
+
+// Splits a line into words and renders each with a key derived from its
+// position + content so React's reconciliation only animates words that
+// actually changed since the last partial. Trailing cursor shows for the
+// in-flight partial only.
+function StreamLine({ line, transitions }: { line: Line; transitions: boolean }): JSX.Element {
+  const tokens = tokenize(line.text);
+  return (
+    <span
+      className={`display-line ${line.partial ? 'partial' : 'final'} ${transitions ? 'transition' : ''}`}
+    >
+      {tokens.map((tok, i) =>
+        tok.kind === 'word' ? (
+          <span
+            key={`${i}-${tok.text}`}
+            className={`stream-word ${transitions ? 'animate' : ''}`}
+          >
+            {tok.text}
+          </span>
+        ) : (
+          <span key={`s-${i}`}>{tok.text}</span>
+        ),
+      )}
+      {'\n'}
+    </span>
+  );
+}
+
+type Token = { kind: 'word' | 'space'; text: string };
+
+function tokenize(text: string): Token[] {
+  // Split on whitespace runs, preserving them as separate tokens so spaces
+  // don't get re-keyed and re-animated when a new word appears next to them.
+  const parts = text.split(/(\s+)/);
+  return parts
+    .filter((p) => p.length > 0)
+    .map((p) => ({ kind: /^\s+$/.test(p) ? ('space' as const) : ('word' as const), text: p }));
 }
 
 function mergePartial(prev: Line[], next: Line, maxLines: number): Line[] {

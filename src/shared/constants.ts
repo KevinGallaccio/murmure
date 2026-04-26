@@ -17,8 +17,33 @@ export const TARGET_SAMPLE_RATE = 16000;
 export const CHUNK_SAMPLES = 1600;
 
 export const ASSEMBLY_DASHBOARD_URL = 'https://www.assemblyai.com/dashboard/account/billing';
+export const ASSEMBLY_SIGNUP_URL = 'https://www.assemblyai.com/dashboard/signup';
 
-export const DEFAULT_RATE_PER_HOUR = 0.45;
+export const SPEECHMATICS_WS_URL = 'wss://eu.rt.speechmatics.com/v2/';
+
+export const SPEECHMATICS_PARAMS = {
+  encoding: 'pcm_s16le',
+  sample_rate: 16000,
+  language: 'fr',
+  // 'standard' or 'enhanced'. Enhanced is supported on the free tier (verified
+  // against the Speechmatics usage dashboard) and gives noticeably better
+  // accuracy for live captioning, which is the whole point of the app.
+  operating_point: 'enhanced',
+  // Finals are emitted at most max_delay seconds after end-of-utterance
+  // (range 0.7–4). Partials flow continuously every ~500ms regardless,
+  // which is the architectural reason we picked Speechmatics over the
+  // AssemblyAI streaming model for continuous-speech use cases.
+  max_delay: 1.5,
+  max_delay_mode: 'flexible',
+  enable_partials: true,
+} as const;
+
+export const SPEECHMATICS_DASHBOARD_URL = 'https://portal.speechmatics.com/';
+export const SPEECHMATICS_SIGNUP_URL = 'https://portal.speechmatics.com/signup/';
+
+export const ASSEMBLY_DEFAULT_RATE_PER_HOUR = 0.45;
+export const SPEECHMATICS_DEFAULT_RATE_PER_HOUR = 0.24;
+export const DEFAULT_RATE_PER_HOUR = ASSEMBLY_DEFAULT_RATE_PER_HOUR;
 
 export const RECONNECT_BACKOFF_MS = [1000, 2000, 4000];
 

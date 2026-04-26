@@ -6,27 +6,40 @@ import {
   type LanguageChoice,
   type LanguageState,
   type MockState,
+  type Provider,
   type StreamState,
   type Tab,
   type Theme,
+  type TranscriptionLanguage,
 } from '../shared/ipc';
-import { ASSEMBLY_DASHBOARD_URL } from '../shared/constants';
+import {
+  ASSEMBLY_DASHBOARD_URL,
+  ASSEMBLY_SIGNUP_URL,
+  SPEECHMATICS_DASHBOARD_URL,
+  SPEECHMATICS_SIGNUP_URL,
+} from '../shared/constants';
 import {
   clearApiKey,
   getApiKey,
   getLanguageChoice,
+  getProvider,
   getStyleSettings,
   getTheme,
+  getTranscriptionLanguage,
   hasApiKey,
   resetStyle,
   resolveLocale,
   saveApiKey,
   setLanguageChoice,
+  setProvider,
   setTheme,
+  setTranscriptionLanguage,
   updateStyle,
 } from './settings';
 import { findDisplay, listDisplays } from './displays';
 import { AssemblyAIClient } from './assemblyai-client';
+import { SpeechmaticsClient } from './speechmatics-client';
+import type { STTClient, STTClientCallbacks } from './stt-client';
 import { usageTracker } from './usage';
 import { createDisplayWindow } from './windows';
 
@@ -37,7 +50,8 @@ type AppContext = {
 
 const ctx: AppContext = { controlWindow: null as unknown as BrowserWindow, displayWindow: null };
 
-let client: AssemblyAIClient | null = null;
+let client: STTClient | null = null;
+let activeProvider: Provider = 'speechmatics';
 let mockEnabled = true;
 
 function broadcast(channel: string, payload: unknown): void {
@@ -115,9 +129,9 @@ export function navigateToTab(tab: Tab): void {
   sendToControl(IPC.TabNavigate, tab);
 }
 
-function setupClientCallbacks(): AssemblyAIClient {
+function buildSttCallbacks(): STTClientCallbacks {
   let lastState: StreamState = 'idle';
-  return new AssemblyAIClient({
+  return {
     onStateChange: (state: StreamState) => {
       // finalize the session on any transition out of streaming
       if (lastState === 'streaming' && state !== 'streaming' && usageTracker.isActive()) {
@@ -143,35 +157,95 @@ function setupClientCallbacks(): AssemblyAIClient {
     onSessionEnd: () => {
       // server-side termination already arrived; tracker will end on the next transition
     },
-  });
+  };
+}
+
+function createClientFor(provider: Provider): STTClient {
+  const cb = buildSttCallbacks();
+  if (provider === 'speechmatics') return new SpeechmaticsClient(cb);
+  return new AssemblyAIClient(cb);
+}
+
+function ensureClient(): STTClient {
+  const wanted = getProvider();
+  if (!client || wanted !== activeProvider) {
+    if (client && client.getState() !== 'idle') {
+      client.stop();
+    }
+    activeProvider = wanted;
+    client = createClientFor(wanted);
+  }
+  return client;
+}
+
+function dashboardUrlFor(provider: Provider): string {
+  return provider === 'speechmatics' ? SPEECHMATICS_DASHBOARD_URL : ASSEMBLY_DASHBOARD_URL;
+}
+
+function signupUrlFor(provider: Provider): string {
+  return provider === 'speechmatics' ? SPEECHMATICS_SIGNUP_URL : ASSEMBLY_SIGNUP_URL;
 }
 
 export function registerIpc(controlWindow: BrowserWindow): void {
   ctx.controlWindow = controlWindow;
-  client = setupClientCallbacks();
+  activeProvider = getProvider();
+  client = createClientFor(activeProvider);
   usageTracker.bind((payload) => broadcast(IPC.UsageUpdate, payload));
 
-  ipcMain.handle(IPC.ApiKeyStatus, () => ({ hasKey: hasApiKey() }));
-  ipcMain.handle(IPC.ApiKeySave, async (_e, payload: { plaintext: string }) => {
-    saveApiKey(payload.plaintext);
+  ipcMain.handle(IPC.ProviderGet, () => ({ provider: getProvider() }));
+  ipcMain.handle(IPC.ProviderSet, (_e, payload: { provider: Provider }) => {
+    if (client && client.getState() !== 'idle') client.stop();
+    const next = setProvider(payload.provider);
+    activeProvider = next;
+    client = createClientFor(next);
+    broadcast(IPC.ProviderChanged, { provider: next });
+    // Cost rate is per-provider — push a fresh UsageUpdate so the cost card
+    // and the $/h chip in the hero re-render with the new provider's rate.
+    broadcast(IPC.UsageUpdate, usageTracker.snapshot());
+    return { provider: next };
+  });
+  ipcMain.handle(IPC.ProviderOpenSignup, (_e, payload: { provider: Provider }) => {
+    void shell.openExternal(signupUrlFor(payload.provider));
+    return { ok: true };
+  });
+
+  ipcMain.handle(IPC.TranscriptionLanguageGet, () => ({ language: getTranscriptionLanguage() }));
+  ipcMain.handle(IPC.TranscriptionLanguageSet, (_e, payload: { language: TranscriptionLanguage }) => {
+    // Language is baked into the WebSocket session at start time. Stop any
+    // active stream so the operator's next Diffuser click opens a fresh
+    // session with the new language.
+    if (client && client.getState() !== 'idle') client.stop();
+    const next = setTranscriptionLanguage(payload.language);
+    broadcast(IPC.TranscriptionLanguageChanged, { language: next });
+    return { language: next };
+  });
+
+  ipcMain.handle(IPC.ApiKeyStatus, (_e, payload: { provider: Provider }) => ({
+    hasKey: hasApiKey(payload.provider),
+  }));
+  ipcMain.handle(IPC.ApiKeySave, async (_e, payload: { provider: Provider; plaintext: string }) => {
+    saveApiKey(payload.provider, payload.plaintext);
     return { hasKey: true };
   });
-  ipcMain.handle(IPC.ApiKeyClear, () => {
-    clearApiKey();
+  ipcMain.handle(IPC.ApiKeyClear, (_e, payload: { provider: Provider }) => {
+    clearApiKey(payload.provider);
     return { hasKey: false };
   });
-  ipcMain.handle(IPC.ApiKeyTest, async (): Promise<ApiKeyTestResult> => {
-    const key = getApiKey();
-    if (!key) return { ok: false, error: "Aucune clé API enregistrée." };
-    if (!client) client = setupClientCallbacks();
-    return client.testApiKey(key);
+  ipcMain.handle(IPC.ApiKeyTest, async (_e, payload: { provider: Provider }): Promise<ApiKeyTestResult> => {
+    const key = getApiKey(payload.provider);
+    if (!key) return { ok: false, error: 'Aucune clé API enregistrée.' };
+    // Use a one-shot tester from the right provider's client without
+    // disturbing the currently-bound long-lived client.
+    const tester = createClientFor(payload.provider);
+    return tester.testApiKey(key);
   });
 
   ipcMain.handle(IPC.StreamStart, async () => {
-    const key = getApiKey();
+    const provider = getProvider();
+    const key = getApiKey(provider);
     if (!key) return { ok: false, error: 'Clé API absente.' };
-    if (!client) client = setupClientCallbacks();
-    client.start(key);
+    const c = ensureClient();
+    c.start(key);
     return { ok: true };
   });
   ipcMain.handle(IPC.StreamStop, async () => {
@@ -246,7 +320,7 @@ export function registerIpc(controlWindow: BrowserWindow): void {
     usageTracker.setRate(payload.ratePerHour),
   );
   ipcMain.handle(IPC.UsageOpenDashboard, () => {
-    void shell.openExternal(ASSEMBLY_DASHBOARD_URL);
+    void shell.openExternal(dashboardUrlFor(getProvider()));
     return { ok: true };
   });
 

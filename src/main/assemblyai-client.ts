@@ -5,16 +5,9 @@ import {
   FORCE_ENDPOINT_MS,
   RECONNECT_BACKOFF_MS,
 } from '../shared/constants';
-import type { StreamErrorPayload, StreamState, TranscriptFinal, TranscriptPartial } from '../shared/ipc';
-
-export type AssemblyAIClientCallbacks = {
-  onStateChange: (state: StreamState) => void;
-  onPartial: (payload: TranscriptPartial) => void;
-  onFinal: (payload: TranscriptFinal) => void;
-  onError: (payload: StreamErrorPayload) => void;
-  onSessionBegin: () => void;
-  onSessionEnd: (sessionDurationSeconds: number) => void;
-};
+import type { StreamState } from '../shared/ipc';
+import type { STTClient, STTClientCallbacks } from './stt-client';
+import { getTranscriptionLanguage } from './settings';
 
 type AssemblyEvent =
   | { type: 'Begin'; id: string; expires_at: number }
@@ -23,7 +16,7 @@ type AssemblyEvent =
   | { type: 'Error'; error?: string; code?: string }
   | { type: string; [key: string]: unknown };
 
-export class AssemblyAIClient {
+export class AssemblyAIClient implements STTClient {
   private ws: WebSocket | null = null;
   private state: StreamState = 'idle';
   private reconnectAttempt = 0;
@@ -32,7 +25,7 @@ export class AssemblyAIClient {
   private currentTurnText = '';
   private forceEndpointTimer: NodeJS.Timeout | null = null;
 
-  constructor(private readonly cb: AssemblyAIClientCallbacks) {}
+  constructor(private readonly cb: STTClientCallbacks) {}
 
   getState(): StreamState {
     return this.state;
@@ -155,7 +148,7 @@ export class AssemblyAIClient {
     params.set('sample_rate', String(ASSEMBLY_PARAMS.sample_rate));
     params.set('encoding', ASSEMBLY_PARAMS.encoding);
     params.set('speech_model', ASSEMBLY_PARAMS.speech_model);
-    params.set('language', ASSEMBLY_PARAMS.language);
+    params.set('language', getTranscriptionLanguage());
     params.set('format_turns', String(ASSEMBLY_PARAMS.format_turns));
     params.set(
       'min_end_of_turn_silence_when_confident',
@@ -203,7 +196,7 @@ export class AssemblyAIClient {
         return;
       }
       const reasonText = reason?.toString('utf-8') || `code ${code}`;
-      this.cb.onError({ code: String(code), message: `Connexion terminée: ${reasonText}` });
+      this.cb.onError({ code: String(code), message: `Connexion terminée : ${reasonText}` });
       if (wasStreaming && this.reconnectAttempt < RECONNECT_BACKOFF_MS.length) {
         const delay = RECONNECT_BACKOFF_MS[this.reconnectAttempt];
         this.reconnectAttempt += 1;

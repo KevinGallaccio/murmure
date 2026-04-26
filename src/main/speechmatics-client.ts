@@ -8,13 +8,16 @@ type SpeechmaticsEvent =
   | { message: 'AudioAdded'; seq_no: number }
   | {
       message: 'AddPartialTranscript';
+      // Speechmatics format 2.9 puts the transcript inside metadata, not at
+      // the top level (older 2.1 docs example shows it top-level). The
+      // top-level field is kept here for forward/back compat — read both.
       transcript?: string;
-      metadata?: { start_time?: number; end_time?: number };
+      metadata?: { start_time?: number; end_time?: number; transcript?: string };
     }
   | {
       message: 'AddTranscript';
       transcript?: string;
-      metadata?: { start_time?: number; end_time?: number };
+      metadata?: { start_time?: number; end_time?: number; transcript?: string };
     }
   | { message: 'EndOfTranscript' }
   | { message: 'Info'; type?: string; reason?: string }
@@ -305,14 +308,13 @@ export class SpeechmaticsClient implements STTClient {
       }
       case 'AddPartialTranscript': {
         this.partialCount += 1;
-        const text = (ev as { transcript?: string }).transcript ?? '';
+        const text = extractTranscript(ev);
         if (!this.firstPartialLogged) {
           this.firstPartialLogged = true;
           console.info('[murmure] Speechmatics ← first AddPartialTranscript:', JSON.stringify(ev));
-        } else {
-          const meta = (ev as { metadata?: { start_time?: number; end_time?: number } }).metadata;
+        } else if (this.partialCount % 10 === 0) {
           console.info(
-            `[murmure] Speechmatics partial #${this.partialCount} [${meta?.start_time?.toFixed(2) ?? '?'}-${meta?.end_time?.toFixed(2) ?? '?'}s] "${text.length > 60 ? text.slice(0, 60) + '…' : text}" (len=${text.length})`,
+            `[murmure] Speechmatics partial #${this.partialCount}: "${text.length > 60 ? text.slice(0, 60) + '…' : text}" (len=${text.length})`,
           );
         }
         if (!text) break;
@@ -320,7 +322,7 @@ export class SpeechmaticsClient implements STTClient {
         break;
       }
       case 'AddTranscript': {
-        const text = (ev as { transcript?: string }).transcript ?? '';
+        const text = extractTranscript(ev);
         if (!this.firstFinalLogged) {
           this.firstFinalLogged = true;
           console.info('[murmure] Speechmatics ← first AddTranscript:', JSON.stringify(ev));
@@ -401,6 +403,25 @@ export class SpeechmaticsClient implements STTClient {
       this.heartbeatTimer = null;
     }
   }
+}
+
+// Speechmatics format 2.9 nests the transcript text inside `metadata.transcript`
+// instead of placing it at the top level (which the 2.1 docs example showed).
+// Reading both fields keeps us robust if Speechmatics flips back, and
+// concatenating from `results` is a last-resort fallback for unfamiliar shapes.
+function extractTranscript(ev: SpeechmaticsEvent): string {
+  const top = (ev as { transcript?: string }).transcript;
+  if (typeof top === 'string' && top.length > 0) return top;
+  const meta = (ev as { metadata?: { transcript?: string } }).metadata;
+  if (meta && typeof meta.transcript === 'string') return meta.transcript;
+  const results = (ev as { results?: Array<{ alternatives?: Array<{ content?: string }> }> }).results;
+  if (Array.isArray(results) && results.length > 0) {
+    return results
+      .map((r) => r.alternatives?.[0]?.content ?? '')
+      .filter(Boolean)
+      .join(' ');
+  }
+  return '';
 }
 
 function buildStartRecognition() {

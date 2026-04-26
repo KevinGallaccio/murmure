@@ -84,8 +84,18 @@ export class SpeechmaticsClient implements STTClient {
   }
 
   sendAudio(buffer: ArrayBuffer): void {
-    if (this.audioSendBlocked) return;
-    if (this.state !== 'streaming' || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (this.audioSendBlocked) {
+      this.logGatedOnce('audioSendBlocked (post-EndOfStream)');
+      return;
+    }
+    if (this.state !== 'streaming') {
+      this.logGatedOnce(`state=${this.state}, expected streaming`);
+      return;
+    }
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      this.logGatedOnce(`ws not open (readyState=${this.ws?.readyState})`);
+      return;
+    }
     if (this.ws.bufferedAmount > 256 * 1024) {
       console.warn('[murmure] Speechmatics WebSocket bufferedAmount exceeded threshold; dropping chunk');
       return;
@@ -93,9 +103,25 @@ export class SpeechmaticsClient implements STTClient {
     try {
       this.ws.send(Buffer.from(buffer), { binary: true });
       this.audioSeqNo += 1;
+      if (this.audioSeqNo === 1 || this.audioSeqNo % 50 === 0) {
+        // Sample the first few bytes to confirm we're not sending all-zero
+        // silence. PCM s16le with audible signal will have non-zero values.
+        const view = new Int16Array(buffer.slice(0, 16));
+        const peak = Math.max(...Array.from(view).map((v) => Math.abs(v)));
+        console.info(
+          `[murmure] Speechmatics sent #${this.audioSeqNo} (${buffer.byteLength}B, peak16=${peak})`,
+        );
+      }
     } catch (err) {
       console.error('[murmure] Speechmatics failed to send audio chunk', err);
     }
+  }
+
+  private gatedLogged = false;
+  private logGatedOnce(reason: string): void {
+    if (this.gatedLogged) return;
+    this.gatedLogged = true;
+    console.warn(`[murmure] Speechmatics sendAudio gated — ${reason}`);
   }
 
   testApiKey(apiKey: string): Promise<{ ok: boolean; error?: string }> {
@@ -175,6 +201,7 @@ export class SpeechmaticsClient implements STTClient {
     this.audioSeqNo = 0;
     this.partialTurnId = '';
     this.audioSendBlocked = false;
+    this.gatedLogged = false;
 
     ws.on('open', () => {
       try {
@@ -258,18 +285,26 @@ export class SpeechmaticsClient implements STTClient {
         this.cb.onSessionBegin();
         break;
       }
-      case 'AudioAdded':
-        // server-side ack; nothing to do — we count locally on send
+      case 'AudioAdded': {
+        const ack = (ev as { seq_no: number }).seq_no;
+        if (ack === 1 || ack % 50 === 0) {
+          console.info(`[murmure] Speechmatics ack chunk #${ack}`);
+        }
         break;
+      }
       case 'AddPartialTranscript': {
         const text = (ev as { transcript?: string }).transcript ?? '';
         if (!text) break;
+        console.info(
+          `[murmure] Speechmatics partial: "${text.length > 60 ? text.slice(0, 60) + '…' : text}"`,
+        );
         this.cb.onPartial({ text, turnId: this.partialTurnId });
         break;
       }
       case 'AddTranscript': {
         const text = (ev as { transcript?: string }).transcript ?? '';
         if (!text.trim()) break;
+        console.info(`[murmure] Speechmatics final: "${text}"`);
         this.finalCount += 1;
         const turnId = `f-${this.finalCount}`;
         this.cb.onFinal({ text, turnId, timestamp: Date.now() });

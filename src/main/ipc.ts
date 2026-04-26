@@ -236,7 +236,14 @@ export function registerIpc(controlWindow: BrowserWindow): void {
     return { ok: true };
   });
 
+  let chunkCount = 0;
   ipcMain.on(IPC.AudioChunk, (_e, buffer: ArrayBuffer | Uint8Array) => {
+    chunkCount += 1;
+    if (chunkCount === 1 || chunkCount % 50 === 0) {
+      console.info(
+        `[murmure] main received audio chunk #${chunkCount} from renderer (${buffer.byteLength}B), client=${client ? activeProvider : 'null'}`,
+      );
+    }
     if (!client) return;
     if (buffer instanceof Uint8Array) {
       const copy = new ArrayBuffer(buffer.byteLength);

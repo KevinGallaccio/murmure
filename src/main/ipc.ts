@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, screen, shell, globalShortcut } from 'electron';
+import { BrowserWindow, ipcMain, screen, shell } from 'electron';
 import { IPC, type ApiKeyTestResult, type DisplayState, type MockState, type StreamState } from '../shared/ipc';
 import { ASSEMBLY_DASHBOARD_URL } from '../shared/constants';
 import {
@@ -58,6 +58,17 @@ function getDisplayState(): DisplayState {
 
 function broadcastDisplayState(): void {
   broadcast(IPC.DisplayState, getDisplayState());
+}
+
+function attachEscapeToExitFullscreen(window: BrowserWindow): void {
+  window.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown' || input.key !== 'Escape') return;
+    const dw = ctx.displayWindow;
+    if (dw && !dw.isDestroyed() && dw.isFullScreen()) {
+      dw.setFullScreen(false);
+      event.preventDefault();
+    }
+  });
 }
 
 function setMockEnabled(enabled: boolean): void {
@@ -176,6 +187,7 @@ export function registerIpc(controlWindow: BrowserWindow): void {
     win.on('enter-full-screen', broadcastDisplayState);
     win.on('leave-full-screen', broadcastDisplayState);
     win.on('move', broadcastDisplayState);
+    attachEscapeToExitFullscreen(win);
     return getDisplayState();
   });
   ipcMain.handle(IPC.DisplayClose, () => {
@@ -200,24 +212,13 @@ export function registerIpc(controlWindow: BrowserWindow): void {
     return { ok: true };
   });
 
-  // global Escape to exit fullscreen on display window when focused
-  controlWindow.on('focus', () => {
-    // do not register escape on control window
-  });
-
-  const registerEscape = () => {
-    try {
-      globalShortcut.register('Escape', () => {
-        const dw = ctx.displayWindow;
-        if (dw && !dw.isDestroyed() && dw.isFullScreen() && dw.isFocused()) {
-          dw.setFullScreen(false);
-        }
-      });
-    } catch {
-      // ignore — already registered
-    }
-  };
-  registerEscape();
+  // Escape exits the display fullscreen, listened on each window's webContents.
+  // Using before-input-event (instead of globalShortcut) avoids hijacking
+  // Escape system-wide and works reliably on Windows, where globalShortcut
+  // for Escape is unreliable. The handler fires on whichever window is
+  // focused, so the operator can press Escape from the control window even
+  // when the display is fullscreen on another monitor.
+  attachEscapeToExitFullscreen(controlWindow);
 
   // toast on screen change
   screen.on('display-added', () => {

@@ -348,10 +348,12 @@ a { color: var(--brand); text-decoration: none; }
   border-radius: 999px;
   background: var(--paper-3);
   border: 1px solid var(--line-2);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  padding: 0 4px;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
 }
 .tt-thumb {
   position: absolute;
@@ -362,20 +364,28 @@ a { color: var(--brand); text-decoration: none; }
   background: var(--paper);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 0 0 0.5px var(--line-2);
   transition: left 180ms var(--ease);
+  pointer-events: none;
 }
-.tt-thumb.light { left: 2px; }
-.tt-thumb.dark { left: 32px; }
+.tt-thumb.light { left: 1px; }
+.tt-thumb.dark { left: 33px; }
 .tt-icon {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 1;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
   height: 20px;
   color: var(--ink-4);
   transition: color 150ms var(--ease);
+  pointer-events: none;
 }
+.tt-icon.sun { left: 1px; }
+.tt-icon.moon { right: 1px; }
 .tt-icon.on { color: var(--brand); }
+.tt-icon svg { display: block; }
 
 /* Main column ----------------------------------------------- */
 .main {
@@ -596,6 +606,8 @@ a { color: var(--brand); text-decoration: none; }
   border-radius: 9px;
   padding: 3px;
   gap: 2px;
+  align-self: flex-start;
+  width: fit-content;
 }
 .seg button {
   font-family: inherit;

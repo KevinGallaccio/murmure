@@ -108,10 +108,10 @@ export function Sidebar({
             aria-label={t.themeToggle.tooltip}
           >
             <span className={`tt-thumb ${theme}`} />
-            <span className={`tt-icon ${theme === 'light' ? 'on' : ''}`}>
+            <span className={`tt-icon sun ${theme === 'light' ? 'on' : ''}`}>
               <IconSun size={12} />
             </span>
-            <span className={`tt-icon ${theme === 'dark' ? 'on' : ''}`}>
+            <span className={`tt-icon moon ${theme === 'dark' ? 'on' : ''}`}>
               <IconMoon size={12} />
             </span>
           </button>

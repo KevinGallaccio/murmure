@@ -161,6 +161,10 @@ export function setLanguageChoice(choice: LanguageChoice): LanguageChoice {
 export function resolveLocale(choice: LanguageChoice = getLanguageChoice()): ResolvedLocale {
   if (choice === 'fr') return 'fr';
   if (choice === 'en') return 'en';
-  const sys = (app.getLocale() || '').toLowerCase();
+  // 'auto' — prefer the OS-level locale (System Settings → Language & Region)
+  // over Electron's getLocale, which can drift from the user's preferred
+  // language when region/locale codes diverge (e.g. English language on a
+  // French region setting).
+  const sys = (app.getSystemLocale?.() || app.getLocale() || '').toLowerCase();
   return sys.startsWith('fr') ? 'fr' : 'en';
 }

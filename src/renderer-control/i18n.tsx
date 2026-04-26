@@ -139,7 +139,7 @@ export type Messages = {
 
 const fr: Messages = {
   brand: { workspace: 'Espace de travail' },
-  tabs: { stage: 'Scène', appearance: 'Apparence', setup: 'Réglages' },
+  tabs: { stage: 'Régie', appearance: 'Apparence', setup: 'Réglages' },
   state: {
     idle: 'au repos',
     connecting: 'connexion en cours',
@@ -162,7 +162,7 @@ const fr: Messages = {
     label: 'Affichage',
   },
   stage: {
-    eyebrow: 'Scène',
+    eyebrow: 'Régie',
     titleA: 'Rendre la parole ',
     titleEm: 'lisible',
     titleB: '.',

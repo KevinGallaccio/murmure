@@ -31,7 +31,7 @@ const STRINGS = {
     editSelectAll: 'Tout sélectionner',
 
     view: 'Affichage',
-    viewStage: 'Scène',
+    viewStage: 'Régie',
     viewAppearance: 'Apparence',
     viewSetup: 'Réglages',
     viewToggleDisplay: "Ouvrir / Fermer l'écran d'audience",

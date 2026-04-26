@@ -1,28 +1,27 @@
 import { app, Menu, shell, type BrowserWindow, type MenuItemConstructorOptions } from 'electron';
 import { checkForUpdatesInteractive } from './updater';
+import { navigateToTab, onLanguageChange } from './ipc';
+import {
+  getLanguageChoice,
+  resolveLocale,
+  setLanguageChoice,
+} from './settings';
+import { IPC, type LanguageChoice } from '../shared/ipc';
 
-// Same approach as src/main/updater.ts: dialogs and menu labels live in the
-// main process, which can't read the renderer's i18n state. We pick the menu
-// language from the OS locale so an English Mac shows English menus, a French
-// Mac shows French menus. (If the user explicitly toggled the in-app FR/EN
-// switch to something different from their OS, the menu still follows the OS —
-// acceptable trade-off until the renderer's locale is plumbed through to main.)
-type MenuLocale = 'fr' | 'en';
-
-function getMenuLocale(): MenuLocale {
-  const sys = (app.getLocale() || '').toLowerCase();
-  return sys.startsWith('en') ? 'en' : 'fr';
-}
-
+// Menu strings localised based on the user's effective language (the
+// 'language' setting from electron-store, falling back to OS locale when
+// 'auto'). Same approach as updater.ts dialogs.
 const STRINGS = {
   fr: {
     appAbout: `À propos de ${app.name}`,
+    appSettings: 'Réglages…',
     appCheckUpdates: 'Vérifier les mises à jour…',
     appServices: 'Services',
     appHide: `Masquer ${app.name}`,
     appHideOthers: 'Masquer les autres',
     appUnhide: 'Tout afficher',
     appQuit: `Quitter ${app.name}`,
+
     edit: 'Édition',
     editUndo: 'Annuler',
     editRedo: 'Rétablir',
@@ -30,31 +29,41 @@ const STRINGS = {
     editCopy: 'Copier',
     editPaste: 'Coller',
     editSelectAll: 'Tout sélectionner',
+
     view: 'Affichage',
+    viewStage: 'Régie',
+    viewAppearance: 'Apparence',
+    viewSetup: 'Réglages',
+    viewToggleDisplay: "Ouvrir / Fermer l'écran d'audience",
     viewReload: 'Recharger',
-    viewForceReload: 'Forcer le rechargement',
     viewDevTools: 'Outils de développement',
-    viewActualSize: 'Taille réelle',
-    viewZoomIn: 'Zoom avant',
-    viewZoomOut: 'Zoom arrière',
     viewFullscreen: 'Plein écran',
+
+    language: 'Langue',
+    languageEnglish: 'English',
+    languageFrench: 'Français',
+    languageAuto: 'Auto · langue du système',
+
     window: 'Fenêtre',
     windowMinimize: 'Réduire',
     windowZoom: 'Zoom',
     windowFront: 'Tout ramener au premier plan',
     windowClose: 'Fermer',
+
     help: 'Aide',
-    helpDocs: 'Documentation',
+    helpDocs: 'Documentation murmure',
     helpReport: 'Signaler un problème',
   },
   en: {
     appAbout: `About ${app.name}`,
+    appSettings: 'Settings…',
     appCheckUpdates: 'Check for Updates…',
     appServices: 'Services',
     appHide: `Hide ${app.name}`,
     appHideOthers: 'Hide Others',
     appUnhide: 'Show All',
     appQuit: `Quit ${app.name}`,
+
     edit: 'Edit',
     editUndo: 'Undo',
     editRedo: 'Redo',
@@ -62,28 +71,54 @@ const STRINGS = {
     editCopy: 'Copy',
     editPaste: 'Paste',
     editSelectAll: 'Select All',
+
     view: 'View',
+    viewStage: 'Stage',
+    viewAppearance: 'Appearance',
+    viewSetup: 'Setup',
+    viewToggleDisplay: 'Open / Close audience display',
     viewReload: 'Reload',
-    viewForceReload: 'Force Reload',
     viewDevTools: 'Developer Tools',
-    viewActualSize: 'Actual Size',
-    viewZoomIn: 'Zoom In',
-    viewZoomOut: 'Zoom Out',
     viewFullscreen: 'Toggle Full Screen',
+
+    language: 'Language',
+    languageEnglish: 'English',
+    languageFrench: 'Français',
+    languageAuto: 'Auto · match OS',
+
     window: 'Window',
     windowMinimize: 'Minimize',
     windowZoom: 'Zoom',
     windowFront: 'Bring All to Front',
     windowClose: 'Close',
+
     help: 'Help',
-    helpDocs: 'Documentation',
+    helpDocs: 'murmure documentation',
     helpReport: 'Report an Issue',
   },
 } as const;
 
+function setLanguageAndRebuild(choice: LanguageChoice, getControlWindow: () => BrowserWindow | null): void {
+  setLanguageChoice(choice);
+  // Push to renderer too so its UI flips immediately.
+  const win = getControlWindow();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send(IPC.LanguageChanged, { choice, resolved: resolveLocale(choice) });
+  }
+  rebuildMenu(getControlWindow);
+}
+
+let currentGetControlWindow: (() => BrowserWindow | null) | null = null;
+
+function rebuildMenu(getControlWindow: () => BrowserWindow | null): void {
+  const menu = createAppMenu(getControlWindow);
+  Menu.setApplicationMenu(menu);
+}
+
 export function createAppMenu(getControlWindow: () => BrowserWindow | null): Menu {
   const isMac = process.platform === 'darwin';
-  const t = STRINGS[getMenuLocale()];
+  const t = STRINGS[resolveLocale()];
+  const lang = getLanguageChoice();
 
   const template: MenuItemConstructorOptions[] = [];
 
@@ -94,6 +129,11 @@ export function createAppMenu(getControlWindow: () => BrowserWindow | null): Men
       submenu: [
         { role: 'about', label: t.appAbout },
         { type: 'separator' },
+        {
+          label: t.appSettings,
+          accelerator: 'CmdOrCtrl+,',
+          click: () => navigateToTab('setup'),
+        },
         {
           label: t.appCheckUpdates,
           click: () => {
@@ -112,7 +152,7 @@ export function createAppMenu(getControlWindow: () => BrowserWindow | null): Men
     });
   }
 
-  // Edit menu
+  // Edit
   template.push({
     label: t.edit,
     submenu: [
@@ -126,23 +166,60 @@ export function createAppMenu(getControlWindow: () => BrowserWindow | null): Men
     ],
   });
 
-  // View menu
+  // View — tab navigation lives here
   template.push({
     label: t.view,
     submenu: [
-      { role: 'reload', label: t.viewReload },
-      { role: 'forceReload', label: t.viewForceReload },
-      { role: 'toggleDevTools', label: t.viewDevTools },
+      {
+        label: t.viewStage,
+        accelerator: 'CmdOrCtrl+1',
+        click: () => navigateToTab('stage'),
+      },
+      {
+        label: t.viewAppearance,
+        accelerator: 'CmdOrCtrl+2',
+        click: () => navigateToTab('appearance'),
+      },
+      {
+        label: t.viewSetup,
+        accelerator: 'CmdOrCtrl+3',
+        click: () => navigateToTab('setup'),
+      },
       { type: 'separator' },
-      { role: 'resetZoom', label: t.viewActualSize },
-      { role: 'zoomIn', label: t.viewZoomIn },
-      { role: 'zoomOut', label: t.viewZoomOut },
+      { role: 'reload', label: t.viewReload },
+      { role: 'toggleDevTools', label: t.viewDevTools },
       { type: 'separator' },
       { role: 'togglefullscreen', label: t.viewFullscreen },
     ],
   });
 
-  // Window menu
+  // Language
+  template.push({
+    label: t.language,
+    submenu: [
+      {
+        label: t.languageEnglish,
+        type: 'radio',
+        checked: lang === 'en',
+        click: () => setLanguageAndRebuild('en', getControlWindow),
+      },
+      {
+        label: t.languageFrench,
+        type: 'radio',
+        checked: lang === 'fr',
+        click: () => setLanguageAndRebuild('fr', getControlWindow),
+      },
+      { type: 'separator' },
+      {
+        label: t.languageAuto,
+        type: 'radio',
+        checked: lang === 'auto',
+        click: () => setLanguageAndRebuild('auto', getControlWindow),
+      },
+    ],
+  });
+
+  // Window
   template.push({
     label: t.window,
     submenu: [
@@ -157,7 +234,7 @@ export function createAppMenu(getControlWindow: () => BrowserWindow | null): Men
     ],
   });
 
-  // Help menu
+  // Help
   const helpSubmenu: MenuItemConstructorOptions[] = [
     {
       label: t.helpDocs,
@@ -172,20 +249,15 @@ export function createAppMenu(getControlWindow: () => BrowserWindow | null): Men
       },
     },
   ];
-
-  // On Windows/Linux, put the "Check for Updates" in the Help menu
   if (!isMac) {
     helpSubmenu.push(
       { type: 'separator' },
       {
         label: t.appCheckUpdates,
-        click: () => {
-          checkForUpdatesInteractive(getControlWindow());
-        },
+        click: () => checkForUpdatesInteractive(getControlWindow()),
       },
     );
   }
-
   template.push({
     label: t.help,
     role: 'help',
@@ -196,6 +268,10 @@ export function createAppMenu(getControlWindow: () => BrowserWindow | null): Men
 }
 
 export function setupAppMenu(getControlWindow: () => BrowserWindow | null): void {
-  const menu = createAppMenu(getControlWindow);
-  Menu.setApplicationMenu(menu);
+  currentGetControlWindow = getControlWindow;
+  rebuildMenu(getControlWindow);
+  // Rebuild whenever the user flips language from the sidebar / Setup tab.
+  onLanguageChange(() => {
+    if (currentGetControlWindow) rebuildMenu(currentGetControlWindow);
+  });
 }

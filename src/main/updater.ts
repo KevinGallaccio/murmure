@@ -1,5 +1,24 @@
 import { autoUpdater, type UpdateCheckResult, type UpdateInfo } from 'electron-updater';
-import { BrowserWindow, dialog, app, type MessageBoxOptions } from 'electron';
+import { BrowserWindow, dialog, app, shell, type MessageBoxOptions } from 'electron';
+
+// In-place auto-install on macOS requires the app to be signed with an Apple
+// Developer ID. Squirrel.framework (used by electron-updater on macOS) verifies
+// that the new bundle's code signature anchors to the same identity as the
+// running app, and silently rejects the swap if it doesn't. Ad-hoc signed
+// builds (which is what CI produces today) fail this check.
+//
+// Until a Developer ID is set up, macOS users get a "notify + open the
+// Releases page" flow instead. Windows uses the full auto-update flow because
+// NSIS handles in-place updates without signature gymnastics.
+//
+// Flip this to true once the project has a real Developer ID in CI.
+const MACOS_AUTO_INSTALL_ENABLED = false;
+
+const RELEASES_URL = 'https://github.com/KevinGallaccio/murmure/releases/latest';
+
+function shouldUseManualMacFlow(): boolean {
+  return process.platform === 'darwin' && !MACOS_AUTO_INSTALL_ENABLED;
+}
 
 export type UpdateStatus =
   | { type: 'idle' }
@@ -125,6 +144,27 @@ export async function checkForUpdatesInteractive(parentWindow: BrowserWindow | n
       return;
     }
 
+    if (shouldUseManualMacFlow()) {
+      // macOS without a Developer ID can't apply in-place updates. Send the
+      // user to the Releases page instead of silently failing on restart.
+      const response = await showDialog(parentWindow, {
+        type: 'info',
+        title: 'Mise à jour disponible',
+        message: `Une nouvelle version (${latestVersion}) est disponible.\n\nVersion actuelle : ${currentVersion}`,
+        detail:
+          "Téléchargez le nouvel installateur depuis GitHub puis remplacez l'application dans le dossier Applications.\n\n" +
+          "(L'installation automatique sur macOS requiert une signature Apple Developer, pas encore en place pour ce projet.)",
+        buttons: ['Ouvrir GitHub', 'Plus tard'],
+        defaultId: 0,
+        cancelId: 1,
+      });
+
+      if (response.response === 0) {
+        await shell.openExternal(RELEASES_URL);
+      }
+      return;
+    }
+
     const response = await showDialog(parentWindow, {
       type: 'info',
       title: 'Mise à jour disponible',
@@ -164,6 +204,30 @@ export function setupUpdateDownloadedPrompt(getWindow: () => BrowserWindow | nul
   downloadPromptInitialized = true;
 
   autoUpdater.on('update-downloaded', async (info: UpdateInfo) => {
+    // On unsigned macOS builds the swap-on-restart will silently fail and
+    // relaunch the old version. Don't pretend it works — point at GitHub
+    // instead. (Belt-and-suspenders: the interactive check already short-
+    // circuits before downloading, but if anything else triggers a download
+    // this guard keeps the broken UX out of users' way.)
+    if (shouldUseManualMacFlow()) {
+      const parentWindow = getWindow();
+      const response = await showDialog(parentWindow, {
+        type: 'info',
+        title: 'Mise à jour prête',
+        message: `La version ${info.version} a été téléchargée.`,
+        detail:
+          "Téléchargez le nouvel installateur depuis GitHub pour terminer la mise à jour.\n\n" +
+          "(L'installation automatique sur macOS requiert une signature Apple Developer, pas encore en place pour ce projet.)",
+        buttons: ['Ouvrir GitHub', 'Plus tard'],
+        defaultId: 0,
+        cancelId: 1,
+      });
+      if (response.response === 0) {
+        await shell.openExternal(RELEASES_URL);
+      }
+      return;
+    }
+
     const parentWindow = getWindow();
     const response = await showDialog(parentWindow, {
       type: 'info',

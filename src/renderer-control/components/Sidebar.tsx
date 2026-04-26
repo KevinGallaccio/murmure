@@ -57,7 +57,7 @@ export function Sidebar({
           </svg>
         </div>
         <div className="brand-name">murmure</div>
-        <div className="brand-version">v 1.0.7</div>
+        <div className="brand-version">v 1.1.0</div>
       </div>
 
       <div className="nav-label">{t.brand.workspace}</div>

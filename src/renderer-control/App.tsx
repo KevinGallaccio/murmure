@@ -369,7 +369,7 @@ export function App(): JSX.Element {
             {streamState === 'streaming' ? 'rec' : 'idle'}
           </span>
           <span>·</span>
-          <span>v 1.0.7</span>
+          <span>v 1.1.0</span>
         </div>
       </header>
 

@@ -25,10 +25,10 @@ export const SPEECHMATICS_PARAMS = {
   encoding: 'pcm_s16le',
   sample_rate: 16000,
   language: 'fr',
-  // 'standard' or 'enhanced'. We default to 'standard' because 'enhanced'
-  // can be silently rejected on the free tier; standard works on every
-  // account and is what the Speechmatics quickstart uses.
-  operating_point: 'standard',
+  // 'standard' or 'enhanced'. Enhanced is supported on the free tier (verified
+  // against the Speechmatics usage dashboard) and gives noticeably better
+  // accuracy for live captioning, which is the whole point of the app.
+  operating_point: 'enhanced',
   // Finals are emitted at most max_delay seconds after end-of-utterance
   // (range 0.7–4). Partials flow continuously every ~500ms regardless,
   // which is the architectural reason we picked Speechmatics over the

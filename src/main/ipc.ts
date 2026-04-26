@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, screen, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, shell } from 'electron';
 import {
   IPC,
   type ApiKeyTestResult,
@@ -42,6 +42,13 @@ import { SpeechmaticsClient } from './speechmatics-client';
 import type { STTClient, STTClientCallbacks } from './stt-client';
 import { usageTracker } from './usage';
 import { createDisplayWindow } from './windows';
+import {
+  getUpdateStatus,
+  installNow,
+  openReleasesPage,
+  requestDownload,
+  shouldOpenReleasesInsteadOfInstall,
+} from './updater';
 
 type AppContext = {
   controlWindow: BrowserWindow;
@@ -218,6 +225,29 @@ export function registerIpc(controlWindow: BrowserWindow): void {
     const next = setTranscriptionLanguage(payload.language);
     broadcast(IPC.TranscriptionLanguageChanged, { language: next });
     return { language: next };
+  });
+
+  ipcMain.handle(IPC.AppVersionGet, () => app.getVersion());
+
+  ipcMain.handle(IPC.UpdateStatusGet, () => getUpdateStatus());
+  ipcMain.handle(IPC.UpdateDownload, async () => {
+    await requestDownload();
+    return { ok: true };
+  });
+  ipcMain.handle(IPC.UpdateInstall, () => {
+    // On unsigned macOS the swap-on-restart silently fails, so route the
+    // user to the GitHub Releases page instead. Windows uses the real
+    // electron-updater install flow.
+    if (shouldOpenReleasesInsteadOfInstall()) {
+      openReleasesPage();
+    } else {
+      installNow();
+    }
+    return { ok: true };
+  });
+  ipcMain.handle(IPC.UpdateOpenReleases, () => {
+    openReleasesPage();
+    return { ok: true };
   });
 
   ipcMain.handle(IPC.ApiKeyStatus, (_e, payload: { provider: Provider }) => ({

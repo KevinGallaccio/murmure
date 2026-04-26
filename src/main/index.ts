@@ -1,7 +1,7 @@
 import { app, BrowserWindow, globalShortcut, session, systemPreferences } from 'electron';
 import { createControlWindow } from './windows';
 import { registerIpc } from './ipc';
-import { initUpdater, setupUpdateDownloadedPrompt } from './updater';
+import { bindUpdateStatusBroadcast, initUpdater, scheduleAutoCheck } from './updater';
 import { setupAppMenu } from './menu';
 
 if (process.platform === 'darwin') {
@@ -17,9 +17,13 @@ function init(): void {
   // Set up the application menu with "Check for Updates"
   setupAppMenu(() => controlWindow);
   
-  // Initialize the auto-updater (internally guarded to run only once)
+  // Initialize the auto-updater (internally guarded to run only once),
+  // wire status changes through to the renderer banner, and kick off a
+  // quiet background check 5s after launch so we don't compete with
+  // first paint for I/O.
   initUpdater();
-  setupUpdateDownloadedPrompt(() => controlWindow);
+  bindUpdateStatusBroadcast(() => controlWindow);
+  scheduleAutoCheck();
 }
 
 app.whenReady().then(async () => {

@@ -45,6 +45,14 @@ export const IPC = {
   TranscriptionLanguageSet: 'transcription-language:set',
   TranscriptionLanguageChanged: 'transcription-language:changed',
 
+  AppVersionGet: 'app:version:get',
+
+  UpdateStatusGet: 'update:status:get',
+  UpdateStatusChanged: 'update:status:changed',
+  UpdateDownload: 'update:download',
+  UpdateInstall: 'update:install',
+  UpdateOpenReleases: 'update:open-releases',
+
   ApiKeySave: 'apikey:save',
   ApiKeyTest: 'apikey:test',
   ApiKeyClear: 'apikey:clear',
@@ -114,3 +122,14 @@ export type LanguageState = {
   choice: LanguageChoice;
   resolved: ResolvedLocale;
 };
+
+// Mirrors src/main/updater.ts UpdateStatus, redeclared here so the renderer
+// can subscribe without importing from main.
+export type UpdateStatus =
+  | { type: 'idle' }
+  | { type: 'checking' }
+  | { type: 'available'; version: string }
+  | { type: 'not-available' }
+  | { type: 'downloading'; percent: number }
+  | { type: 'downloaded'; version: string }
+  | { type: 'error'; message: string };

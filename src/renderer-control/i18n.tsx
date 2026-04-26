@@ -144,6 +144,17 @@ export type Messages = {
   toast: { newScreen: string; screenLost: string };
   languagePill: { tooltip: string };
   themeToggle: { tooltip: string };
+  update: {
+    available: (version: string) => string;
+    viewReleaseNotes: string;
+    downloadInstall: string;
+    downloading: (percent: number) => string;
+    readyToRestart: string;
+    restartNow: string;
+    dismiss: string;
+    failed: string;
+    retry: string;
+  };
 };
 
 const fr: Messages = {
@@ -315,6 +326,17 @@ const fr: Messages = {
   },
   languagePill: { tooltip: 'Changer de langue' },
   themeToggle: { tooltip: 'Changer le thème' },
+  update: {
+    available: (v) => `Mise à jour disponible · v${v}`,
+    viewReleaseNotes: 'Voir sur GitHub',
+    downloadInstall: 'Télécharger',
+    downloading: (p) => `Téléchargement… ${Math.round(p)}%`,
+    readyToRestart: 'Prête à installer',
+    restartNow: 'Redémarrer',
+    dismiss: 'Ignorer',
+    failed: 'Échec de la mise à jour',
+    retry: 'Réessayer',
+  },
 };
 
 const en: Messages = {
@@ -486,6 +508,17 @@ const en: Messages = {
   },
   languagePill: { tooltip: 'Switch language' },
   themeToggle: { tooltip: 'Switch theme' },
+  update: {
+    available: (v) => `Update available · v${v}`,
+    viewReleaseNotes: 'View on GitHub',
+    downloadInstall: 'Download',
+    downloading: (p) => `Downloading… ${Math.round(p)}%`,
+    readyToRestart: 'Ready to install',
+    restartNow: 'Restart',
+    dismiss: 'Dismiss',
+    failed: 'Update failed',
+    retry: 'Retry',
+  },
 };
 
 const dictionaries: Record<Locale, Messages> = { fr, en };

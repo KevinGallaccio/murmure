@@ -1,6 +1,7 @@
 import type { LanguageChoice, StreamState, Tab, Theme } from '../../shared/ipc';
 import { useT } from '../i18n';
 import { IconStage, IconAppearance, IconSetup, IconGlobe, IconSun, IconMoon } from './Icons';
+import { UpdateBanner } from './UpdateBanner';
 
 type Props = {
   tab: Tab;
@@ -13,6 +14,7 @@ type Props = {
   cycleLanguage: () => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  appVersion: string;
 };
 
 export function Sidebar({
@@ -26,6 +28,7 @@ export function Sidebar({
   cycleLanguage,
   theme,
   setTheme,
+  appVersion,
 }: Props): JSX.Element {
   const t = useT();
   const broadcasting = streamState === 'streaming';
@@ -57,7 +60,7 @@ export function Sidebar({
           </svg>
         </div>
         <div className="brand-name">murmure</div>
-        <div className="brand-version">v 1.1.3</div>
+        <div className="brand-version">v {appVersion}</div>
       </div>
 
       <div className="nav-label">{t.brand.workspace}</div>
@@ -78,6 +81,7 @@ export function Sidebar({
       })}
 
       <div className="sidebar-foot">
+        <UpdateBanner />
         <div className="status-row">
           <span className={`dot ${broadcastDot}`} aria-hidden="true" />
           <span>{broadcastText}</span>

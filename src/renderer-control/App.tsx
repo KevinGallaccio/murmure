@@ -93,6 +93,16 @@ declare global {
       tab: {
         onNavigate: (cb: (t: Tab) => void) => () => void;
       };
+      app: {
+        getVersion: () => Promise<string>;
+      };
+      update: {
+        get: () => Promise<import('../shared/ipc').UpdateStatus>;
+        onStatus: (cb: (s: import('../shared/ipc').UpdateStatus) => void) => () => void;
+        download: () => Promise<{ ok: boolean }>;
+        install: () => Promise<{ ok: boolean }>;
+        openReleases: () => Promise<{ ok: boolean }>;
+      };
     };
   }
 }
@@ -202,6 +212,11 @@ export function App(): JSX.Element {
   const setTranscriptionLanguage = useCallback((next: TranscriptionLanguage) => {
     setTranscriptionLanguageState(next);
     void window.diffuseur.transcriptionLanguage.set(next);
+  }, []);
+
+  const [appVersion, setAppVersion] = useState<string>('');
+  useEffect(() => {
+    void window.diffuseur.app.getVersion().then(setAppVersion);
   }, []);
 
   const captureRef = useRef<AudioCapture | null>(null);
@@ -409,6 +424,7 @@ export function App(): JSX.Element {
           cycleLanguage={cycleLanguage}
           theme={theme}
           setTheme={setTheme}
+          appVersion={appVersion}
         />
 
         <main className="main">

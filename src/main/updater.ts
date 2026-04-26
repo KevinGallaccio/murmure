@@ -14,6 +14,8 @@ type UpdateListener = (status: UpdateStatus) => void;
 
 let currentStatus: UpdateStatus = { type: 'idle' };
 const listeners: Set<UpdateListener> = new Set();
+let updaterInitialized = false;
+let downloadPromptInitialized = false;
 
 function setStatus(status: UpdateStatus): void {
   currentStatus = status;
@@ -31,6 +33,10 @@ async function showDialog(
 }
 
 export function initUpdater(): void {
+  // Ensure we only initialize once to prevent duplicate event handlers
+  if (updaterInitialized) return;
+  updaterInitialized = true;
+
   // Configure auto-updater
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -56,7 +62,7 @@ export function initUpdater(): void {
   });
 
   autoUpdater.on('error', (err) => {
-    setStatus({ type: 'error', message: err?.message ?? 'Unknown error' });
+    setStatus({ type: 'error', message: err?.message ?? 'Erreur inconnue' });
   });
 }
 
@@ -64,7 +70,7 @@ export async function checkForUpdates(): Promise<UpdateCheckResult | null> {
   try {
     return await autoUpdater.checkForUpdates();
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
+    const message = err instanceof Error ? err.message : 'Erreur inconnue';
     setStatus({ type: 'error', message });
     return null;
   }
@@ -74,7 +80,7 @@ export async function downloadUpdate(): Promise<void> {
   try {
     await autoUpdater.downloadUpdate();
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Download failed';
+    const message = err instanceof Error ? err.message : 'Échec du téléchargement';
     setStatus({ type: 'error', message });
   }
 }
@@ -108,7 +114,7 @@ export async function checkForUpdatesInteractive(parentWindow: BrowserWindow | n
     const currentVersion = app.getVersion();
     const latestVersion = result.updateInfo.version;
 
-    // Compare versions - if latest <= current, no update needed
+    // If versions match, no update needed (checkForUpdates handles version comparison)
     if (latestVersion === currentVersion) {
       await showDialog(parentWindow, {
         type: 'info',
@@ -153,6 +159,10 @@ export async function checkForUpdatesInteractive(parentWindow: BrowserWindow | n
 }
 
 export function setupUpdateDownloadedPrompt(getWindow: () => BrowserWindow | null): void {
+  // Ensure we only register the prompt handler once
+  if (downloadPromptInitialized) return;
+  downloadPromptInitialized = true;
+
   autoUpdater.on('update-downloaded', async (info: UpdateInfo) => {
     const parentWindow = getWindow();
     const response = await showDialog(parentWindow, {

@@ -9,6 +9,7 @@ if (process.platform === 'darwin') {
 }
 
 let controlWindow: BrowserWindow | null = null;
+let updaterSetupDone = false;
 
 function init(): void {
   controlWindow = createControlWindow();
@@ -17,9 +18,12 @@ function init(): void {
   // Set up the application menu with "Check for Updates"
   setupAppMenu(() => controlWindow);
   
-  // Initialize the auto-updater
-  initUpdater();
-  setupUpdateDownloadedPrompt(() => controlWindow);
+  // Initialize the auto-updater only once per app lifetime
+  if (!updaterSetupDone) {
+    updaterSetupDone = true;
+    initUpdater();
+    setupUpdateDownloadedPrompt(() => controlWindow);
+  }
 }
 
 app.whenReady().then(async () => {

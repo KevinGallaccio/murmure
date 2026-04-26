@@ -39,7 +39,7 @@ const STRINGS = {
     updateMessage: (latest: string, current: string) =>
       `Une nouvelle version (${latest}) est disponible.\n\nVersion actuelle : ${current}`,
     macDownloadDetail:
-      "Téléchargez le nouvel installateur depuis GitHub puis remplacez l'application dans le dossier Applications.\n\n" +
+      "Téléchargez le nouvel installateur depuis GitHub, puis remplacez l'application dans le dossier Applications.\n\n" +
       "(L'installation automatique sur macOS requiert une signature Apple Developer, pas encore en place pour ce projet.)",
     openGithub: 'Ouvrir GitHub',
     later: 'Plus tard',

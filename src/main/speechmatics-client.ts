@@ -221,7 +221,7 @@ export class SpeechmaticsClient implements STTClient {
         return;
       }
       const reasonText = reason?.toString('utf-8') || `code ${code}`;
-      this.cb.onError({ code: String(code), message: `Connexion terminée: ${reasonText}` });
+      this.cb.onError({ code: String(code), message: `Connexion terminée : ${reasonText}` });
       if (wasStreaming) this.cb.onSessionEnd(sessionDuration);
       if (wasStreaming && this.reconnectAttempt < RECONNECT_BACKOFF_MS.length) {
         const delay = RECONNECT_BACKOFF_MS[this.reconnectAttempt];

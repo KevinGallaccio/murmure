@@ -122,6 +122,18 @@ body.fullscreen .windowed-hint {
   padding: var(--padding-y) var(--padding-x);
   background: var(--bg-color);
   color: var(--text-color);
+  position: relative;
+}
+
+.display-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
+  opacity: 0.18;
+  pointer-events: none;
 }
 
 .display-text {

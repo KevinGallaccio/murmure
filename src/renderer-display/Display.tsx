@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StyleSettings } from '../shared/style';
 import { DEFAULT_STYLE } from '../shared/style';
-import { useMockText } from './MockText';
 
 declare global {
   interface Window {
@@ -37,7 +36,6 @@ function applyStyleVars(settings: StyleSettings): void {
 export function Display(): JSX.Element {
   const [style, setStyle] = useState<StyleSettings>(DEFAULT_STYLE);
   const [lines, setLines] = useState<Line[]>([]);
-  const [mockEnabled, setMockEnabled] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const turnRef = useRef<string>('');
 
@@ -47,7 +45,6 @@ export function Display(): JSX.Element {
 
   useEffect(() => {
     const offStyle = window.diffuseurDisplay.onStyleApply((s) => setStyle(s));
-    const offMock = window.diffuseurDisplay.onMockState((s) => setMockEnabled(s.enabled));
     const offPartial = window.diffuseurDisplay.onPartial(({ text, turnId }) => {
       setLines((prev) => mergePartial(prev, { id: turnId, text, partial: true }, style.maxLines));
       turnRef.current = turnId;
@@ -55,44 +52,52 @@ export function Display(): JSX.Element {
     const offFinal = window.diffuseurDisplay.onFinal(({ text, turnId }) => {
       setLines((prev) => commitFinal(prev, { id: turnId, text, partial: false }, style.maxLines));
     });
-    const offStream = window.diffuseurDisplay.onStreamState((s) => {
-      if (s === 'idle' || s === 'connecting') {
-        // keep last lines until we are actually streaming or mock takes over
-      }
-    });
     const offFs = window.diffuseurDisplay.onDisplayState((s) => {
       document.body.classList.toggle('fullscreen', s.isFullscreen);
       setIsFullscreen(s.isFullscreen);
     });
     return () => {
       offStyle();
-      offMock();
       offPartial();
       offFinal();
-      offStream();
       offFs();
     };
   }, [style.maxLines]);
 
-  // Mock pipeline overrides lines when enabled and no real stream is active
-  const mockLines = useMockText(mockEnabled, style.maxLines);
-  const renderLines = mockEnabled && lines.length === 0 ? mockLines : lines;
+  // The audience display never shows mock content. The Hugo loop is a tool
+  // for the operator's preview pane (in the Stage / Appearance tabs of the
+  // control window), not for the people in the room. When the window is
+  // open but no transcript has arrived yet, we show the brand mark as a
+  // calm, identity-anchored placeholder.
+  const visibleLines = lines.slice(-style.maxLines);
+  const showPlaceholder = visibleLines.length === 0;
 
   return (
     <div className="display-stage">
-      <div className="display-text">
-        {renderLines.slice(-style.maxLines).map((line) => (
-          <span
-            key={line.id + (line.partial ? ':p' : ':f')}
-            className={`display-line ${line.partial ? 'partial' : ''} ${
-              style.transitionsEnabled ? 'transition' : ''
-            }`}
-          >
-            {line.text}
-            {'\n'}
-          </span>
-        ))}
-      </div>
+      {showPlaceholder ? (
+        <div className="display-placeholder" aria-hidden="true">
+          <svg viewBox="0 0 100 100" width="160" height="160">
+            <circle cx="20" cy="50" r="5.5" fill="currentColor" />
+            <circle cx="34" cy="50" r="5.5" fill="currentColor" />
+            <circle cx="48" cy="50" r="5.5" fill="currentColor" />
+            <rect x="60.5" y="44.5" width="25" height="11" rx="5.5" fill="currentColor" />
+          </svg>
+        </div>
+      ) : (
+        <div className="display-text">
+          {visibleLines.map((line) => (
+            <span
+              key={line.id + (line.partial ? ':p' : ':f')}
+              className={`display-line ${line.partial ? 'partial' : ''} ${
+                style.transitionsEnabled ? 'transition' : ''
+              }`}
+            >
+              {line.text}
+              {'\n'}
+            </span>
+          ))}
+        </div>
+      )}
       {!isFullscreen && (
         <div className="windowed-hint">Glissez pour déplacer · Échap quitte le plein écran</div>
       )}

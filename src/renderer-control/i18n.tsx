@@ -1,286 +1,278 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { FontFamilyId, StylePresetId } from '../shared/style';
+import type { LanguageChoice, ResolvedLocale } from '../shared/ipc';
 
-export type Locale = 'fr' | 'en';
+export type Locale = ResolvedLocale;
 
 export type Messages = {
+  brand: { workspace: string };
+  tabs: { stage: string; appearance: string; setup: string };
   state: {
     idle: string;
     connecting: string;
     streaming: string;
     error: string;
+    ready: string;
+    onAir: string;
+    needsConfig: string;
+    broadcasting: string;
+    setupNeeded: string;
   };
   display: {
-    label: string;
     open: string;
     closed: string;
     fullscreen: string;
     openButton: string;
     closeButton: string;
+    statusOpen: string;
+    statusClosed: string;
+    label: string;
   };
-  hero: {
-    stateLabel: string;
-    sessionSuffix: string;
+  stage: {
+    eyebrow: string;
+    titleA: string;
+    titleEm: string;
+    titleB: string;
+    sub: string;
+    sessionLabel: string;
+    rateSuffix: string;
+    startBroadcast: string;
+    stopBroadcast: string;
+    monitorTitle: string;
+    monitorIdle: string;
+    monitorLive: string;
+    setupNeededTitle: string;
+    setupNeededBody: string;
+    setupNeededLink: string;
   };
-  guards: {
-    noKey: string;
-    noDevice: string;
-    singleScreen: string;
+  appearance: {
+    eyebrow: string;
+    titleA: string;
+    titleEm: string;
+    titleB: string;
+    sub: string;
+    previewTitle: string;
+    previewMeta: string;
+    presetsTitle: string;
+    presetsSub: string;
+    reset: string;
+    sectionType: string;
+    sectionColors: string;
+    sectionLayout: string;
+    sectionBehavior: string;
+    fieldFont: string;
+    fieldWeight: string;
+    fieldSize: string;
+    fieldLineHeight: string;
+    fieldTextColor: string;
+    fieldBgColor: string;
+    fieldLiveColor: string;
+    fieldPaddingX: string;
+    fieldPaddingY: string;
+    fieldAlignment: string;
+    fieldMaxLines: string;
+    weight400: string;
+    weight500: string;
+    weight600: string;
+    weight700: string;
+    alignLeft: string;
+    alignCenter: string;
+    alignRight: string;
+    behaviorFade: string;
+    behaviorFadeSub: string;
+    behaviorPartial: string;
+    behaviorPartialSub: string;
+    behaviorAutoScroll: string;
+    behaviorAutoScrollSub: string;
   };
-  sidebar: {
-    caption: string;
-    sections: {
-      config: string;
-      source: string;
-      journal: string;
-      costs: string;
-    };
-  };
-  apikey: {
-    placeholder: string;
-    placeholderSet: string;
-    show: string;
-    hide: string;
-    showAria: string;
-    hideAria: string;
+  presets: { 'high-contrast': string; subtle: string; 'long-reading': string };
+  fonts: Record<string, string>;
+  setup: {
+    eyebrow: string;
+    titleA: string;
+    titleEm: string;
+    titleB: string;
+    sub: string;
+    languageTitle: string;
+    languageSub: string;
+    languageEnglish: string;
+    languageFrench: string;
+    languageAuto: string;
+    keyTitle: string;
+    keySub: string;
+    keyPlaceholder: string;
     save: string;
     test: string;
     testing: string;
     clear: string;
-    saved: string;
-    verified: string;
-    absent: string;
-    unknownError: string;
-  };
-  device: {
-    label: string;
-    none: string;
-    micFallback: (suffix: string) => string;
+    keyValid: string;
+    keyAbsent: string;
+    keyInvalid: string;
+    audioTitle: string;
+    audioSub: string;
+    deviceLabel: string;
+    deviceNone: string;
     permissionDenied: string;
-  };
-  vu: {
-    label: string;
-  };
-  diffuse: {
-    idle: string;
-    connecting: string;
-    streaming: string;
-    error: string;
-  };
-  preview: {
-    title: string;
-    caption: string;
-    help: string;
-    demoTag: string;
-    liveTag: string;
-    demoAria: string;
-    liveAria: string;
-  };
-  apparence: {
-    title: string;
-    reset: string;
-    resetTooltip: string;
-    groups: {
-      type: string;
-      colors: string;
-      layout: string;
-    };
-    fields: {
-      font: string;
-      weight: string;
-      size: string;
-      lineHeight: string;
-      text: string;
-      background: string;
-      live: string;
-      paddingX: string;
-      paddingY: string;
-      align: string;
-      maxLines: string;
-      animation: string;
-      animationDescription: string;
-      chooseColor: string;
-    };
-    weights: {
-      regular: string;
-      semibold: string;
-      extrabold: string;
-    };
-    align: {
-      left: string;
-      center: string;
-      right: string;
-    };
-  };
-  fonts: Record<FontFamilyId, string>;
-  presets: Record<StylePresetId, string>;
-  usage: {
+    levelLabel: string;
+    costsTitle: string;
+    costsSub: string;
     sessionLabel: string;
     cumulLabel: string;
     elapsed: (m: number, s: string) => string;
     hoursAndSessions: (h: string, n: number) => string;
     rateLabel: string;
-    rateSuffix: string;
-    help: string;
     dashboard: string;
-    reset: string;
-    resetSince: (date: string) => string;
+    resetUsage: string;
+    logTitle: string;
+    logSub: string;
+    logEmpty: string;
+    logClear: string;
   };
-  journal: {
-    empty: string;
+  log: {
     streamState: (state: string) => string;
     captureError: (msg: string) => string;
     streamStartFailed: string;
   };
-  toast: {
-    newScreen: string;
-    screenLost: string;
-  };
-  language: {
-    tooltip: string;
-    fr: string;
-    en: string;
-  };
+  toast: { newScreen: string; screenLost: string };
+  languagePill: { tooltip: string };
+  themeToggle: { tooltip: string };
 };
 
 const fr: Messages = {
+  brand: { workspace: 'Espace de travail' },
+  tabs: { stage: 'Régie', appearance: 'Apparence', setup: 'Réglages' },
   state: {
     idle: 'au repos',
     connecting: 'connexion en cours',
     streaming: 'en diffusion',
     error: 'erreur',
+    ready: 'Prêt',
+    onAir: 'En direct',
+    needsConfig: 'Configuration requise',
+    broadcasting: 'En diffusion',
+    setupNeeded: 'À configurer',
   },
   display: {
-    label: 'Affichage',
     open: 'ouvert',
     closed: 'fermé',
     fullscreen: 'plein écran',
     openButton: "Ouvrir l'affichage",
     closeButton: "Fermer l'affichage",
+    statusOpen: 'Ouvert',
+    statusClosed: 'Fermé',
+    label: 'Affichage',
   },
-  hero: {
-    stateLabel: 'État',
-    sessionSuffix: 'session',
+  stage: {
+    eyebrow: 'Régie',
+    titleA: 'Rendre la parole ',
+    titleEm: 'lisible',
+    titleB: '.',
+    sub: "Ouvrez l'écran d'audience, cliquez sur diffuser, puis suivez la transcription en direct ici comme elle apparaît dans la salle.",
+    sessionLabel: 'Session',
+    rateSuffix: '$/h',
+    startBroadcast: 'Démarrer la diffusion',
+    stopBroadcast: 'Arrêter la diffusion',
+    monitorTitle: 'Ce que voit le public',
+    monitorIdle: 'aperçu',
+    monitorLive: 'en direct',
+    setupNeededTitle: 'Configuration en une fois',
+    setupNeededBody: "Il vous faut une clé AssemblyAI et un microphone avant de diffuser. Configurez-les dans l'onglet ",
+    setupNeededLink: 'Réglages',
   },
-  guards: {
-    noKey: "Enregistrez d'abord une clé API.",
-    noDevice: "Sélectionnez un périphérique d'entrée audio.",
-    singleScreen:
-      'Un seul écran détecté — branchez un second écran pour passer en plein écran.',
-  },
-  sidebar: {
-    caption: 'Préparation',
-    sections: {
-      config: 'Configuration',
-      source: 'Source audio',
-      journal: 'Journal',
-      costs: 'Coûts & usage',
-    },
-  },
-  apikey: {
-    placeholder: 'Coller votre clé AssemblyAI ici',
-    placeholderSet: '•••••••••••••• (clé enregistrée)',
-    show: 'Afficher',
-    hide: 'Masquer',
-    showAria: 'Afficher la clé',
-    hideAria: 'Masquer la clé',
-    save: 'Enregistrer',
-    test: 'Tester la clé',
-    testing: 'Vérification…',
-    clear: 'Effacer',
-    saved: 'chiffrée et enregistrée localement',
-    verified: 'clé valide — connexion à AssemblyAI réussie',
-    absent: 'aucune clé enregistrée',
-    unknownError: 'Erreur inconnue.',
-  },
-  device: {
-    label: "Périphérique d'entrée",
-    none: 'Aucun périphérique détecté',
-    micFallback: (suffix) => `Microphone (${suffix})`,
-    permissionDenied: 'Accès microphone refusé.',
-  },
-  vu: {
-    label: "Niveau d'entrée",
-  },
-  diffuse: {
-    idle: 'Diffuser',
-    connecting: 'Connexion…',
-    streaming: 'Arrêter la diffusion',
-    error: 'Réessayer',
-  },
-  preview: {
-    title: 'Aperçu',
-    caption: 'Ce que voit le public',
-    help: "reflète exactement l'écran d'audience",
-    demoTag: 'Démo',
-    liveTag: 'En direct',
-    demoAria: 'Mode démo actif',
-    liveAria: 'Diffusion en direct',
-  },
-  apparence: {
-    title: 'Apparence',
+  appearance: {
+    eyebrow: 'Apparence',
+    titleA: 'Comment la salle ',
+    titleEm: 'lit',
+    titleB: '.',
+    sub: "Réglez l'écran d'audience pour qu'il fonctionne pour le dernier rang. Les modifications s'appliquent en direct.",
+    previewTitle: 'Aperçu pour le public',
+    previewMeta: "reflète exactement l'écran d'audience",
+    presetsTitle: 'Presets',
+    presetsSub: 'Trois points de départ, calibrés pour différentes salles.',
     reset: 'Réinitialiser',
-    resetTooltip: 'Réinitialiser tous les paramètres',
-    groups: {
-      type: 'Type',
-      colors: 'Couleurs',
-      layout: 'Mise en page',
-    },
-    fields: {
-      font: 'Police',
-      weight: 'Épaisseur',
-      size: 'Taille',
-      lineHeight: 'Interligne',
-      text: 'Texte',
-      background: 'Fond',
-      live: 'Texte en direct',
-      paddingX: 'Marge horizontale',
-      paddingY: 'Marge verticale',
-      align: 'Alignement',
-      maxLines: 'Lignes maximum',
-      animation: 'Animation',
-      animationDescription: "Fondu doux à l'apparition",
-      chooseColor: 'Choisir une couleur',
-    },
-    weights: {
-      regular: 'Régulier (400)',
-      semibold: 'Demi-gras (600)',
-      extrabold: 'Extra-gras (800)',
-    },
-    align: {
-      left: 'Gauche',
-      center: 'Centre',
-      right: 'Droite',
-    },
-  },
-  fonts: {
-    Inter: 'Inter (sans)',
-    Manrope: 'Manrope (sans géométrique)',
-    'Atkinson Hyperlegible': 'Atkinson Hyperlegible (lecture facile)',
-    'IBM Plex Sans': 'IBM Plex Sans',
-    'Roboto Slab': 'Roboto Slab (serif)',
-    'JetBrains Mono': 'JetBrains Mono (mono)',
+    sectionType: 'Typographie',
+    sectionColors: 'Couleurs',
+    sectionLayout: 'Mise en page',
+    sectionBehavior: 'Comportement',
+    fieldFont: 'Police',
+    fieldWeight: 'Épaisseur',
+    fieldSize: 'Taille',
+    fieldLineHeight: 'Interligne',
+    fieldTextColor: 'Texte (final)',
+    fieldBgColor: 'Fond',
+    fieldLiveColor: 'En direct (partiel)',
+    fieldPaddingX: 'Marge horizontale',
+    fieldPaddingY: 'Marge verticale',
+    fieldAlignment: 'Alignement',
+    fieldMaxLines: 'Lignes maximum',
+    weight400: 'Régulier',
+    weight500: 'Moyen',
+    weight600: 'Demi-gras',
+    weight700: 'Gras',
+    alignLeft: 'Gauche',
+    alignCenter: 'Centre',
+    alignRight: 'Droite',
+    behaviorFade: "Fondu doux à l'apparition",
+    behaviorFadeSub: 'Les nouvelles lignes apparaissent en fondu plutôt que sèchement',
+    behaviorPartial: 'Afficher les transcriptions partielles',
+    behaviorPartialSub: 'Les mots apparaissent au fur et à mesure',
+    behaviorAutoScroll: 'Défilement automatique',
+    behaviorAutoScrollSub: 'Toujours afficher la dernière ligne',
   },
   presets: {
-    'grand-contraste': 'Grand contraste',
-    sobre: 'Sobre',
-    'lecture-longue': 'Lecture longue',
+    'high-contrast': 'Grand contraste',
+    subtle: 'Sobre',
+    'long-reading': 'Lecture longue',
   },
-  usage: {
+  fonts: {
+    Inter: 'Inter',
+    Manrope: 'Manrope',
+    'Atkinson Hyperlegible': 'Atkinson Hyperlegible',
+    'IBM Plex Sans': 'IBM Plex Sans',
+    'Roboto Slab': 'Roboto Slab',
+    'JetBrains Mono': 'JetBrains Mono',
+  },
+  setup: {
+    eyebrow: 'Réglages',
+    titleA: 'Configuration ',
+    titleEm: 'unique',
+    titleB: '.',
+    sub: 'Collez votre clé AssemblyAI, choisissez un microphone, surveillez les coûts. Tout reste sur cette machine.',
+    languageTitle: "Langue de l'interface",
+    languageSub: "Interface opérateur uniquement. La langue de transcription se règle dans shared/constants.ts.",
+    languageEnglish: 'English',
+    languageFrench: 'Français',
+    languageAuto: 'Auto · langue du système',
+    keyTitle: 'Clé AssemblyAI',
+    keySub: "Chiffrée au repos dans le trousseau du système. Envoyée uniquement à AssemblyAI.",
+    keyPlaceholder: 'Coller votre clé AssemblyAI ici…',
+    save: 'Enregistrer',
+    test: 'Tester',
+    testing: 'Vérification…',
+    clear: 'Effacer',
+    keyValid: 'Clé valide · enregistrée dans le trousseau',
+    keyAbsent: 'Aucune clé enregistrée',
+    keyInvalid: 'Clé invalide',
+    audioTitle: 'Source audio',
+    audioSub: 'Surveillez le vumètre pour vérifier que le micro reçoit du signal.',
+    deviceLabel: "Périphérique d'entrée",
+    deviceNone: 'Aucun périphérique détecté',
+    permissionDenied: 'Accès microphone refusé.',
+    levelLabel: "Niveau d'entrée",
+    costsTitle: 'Coûts & usage',
+    costsSub: 'Estimation locale basée sur la durée de session.',
     sessionLabel: 'Session en cours',
     cumulLabel: 'Cumul estimé',
     elapsed: (m, s) => `${m}m ${s}s écoulé`,
     hoursAndSessions: (h, n) => `${h} h · ${n} sessions`,
-    rateLabel: 'Tarif',
-    rateSuffix: '$/h',
-    help:
-      'Estimation locale basée sur la durée de session. Vérifiez le montant réel sur le tableau de bord AssemblyAI.',
-    dashboard: 'Tableau de bord ↗',
-    reset: 'Remettre à zéro',
-    resetSince: (date) => `depuis le ${date}`,
+    rateLabel: 'Tarif ($/heure)',
+    dashboard: 'Tableau de bord',
+    resetUsage: 'Remettre à zéro',
+    logTitle: 'Journal',
+    logSub: 'Événements récents de cette session.',
+    logEmpty: 'Aucun événement.',
+    logClear: 'Effacer',
   },
-  journal: {
-    empty: '— aucun événement —',
+  log: {
     streamState: (state) => `État du flux: ${state}`,
     captureError: (msg) => `Capture audio: ${msg}`,
     streamStartFailed: 'Démarrage impossible.',
@@ -289,150 +281,146 @@ const fr: Messages = {
     newScreen: "Nouvel écran détecté — déplacer l'affichage ?",
     screenLost: "Écran déconnecté — l'affichage est revenu sur l'écran principal.",
   },
-  language: {
-    tooltip: 'Changer de langue',
-    fr: 'FR',
-    en: 'EN',
-  },
+  languagePill: { tooltip: 'Changer de langue' },
+  themeToggle: { tooltip: 'Changer le thème' },
 };
 
 const en: Messages = {
+  brand: { workspace: 'Workspace' },
+  tabs: { stage: 'Stage', appearance: 'Appearance', setup: 'Setup' },
   state: {
     idle: 'idle',
     connecting: 'connecting',
     streaming: 'broadcasting',
     error: 'error',
+    ready: 'Ready',
+    onAir: 'On air',
+    needsConfig: 'Configure to begin',
+    broadcasting: 'Broadcasting',
+    setupNeeded: 'Setup needed',
   },
   display: {
-    label: 'Display',
     open: 'open',
     closed: 'closed',
     fullscreen: 'fullscreen',
     openButton: 'Open display',
     closeButton: 'Close display',
+    statusOpen: 'Open',
+    statusClosed: 'Closed',
+    label: 'Display',
   },
-  hero: {
-    stateLabel: 'State',
-    sessionSuffix: 'session',
+  stage: {
+    eyebrow: 'Stage',
+    titleA: 'Make the spoken word ',
+    titleEm: 'readable',
+    titleB: '.',
+    sub: 'Open the audience display, hit broadcast, and watch the live transcript here as it appears in the room.',
+    sessionLabel: 'Session',
+    rateSuffix: '$/h',
+    startBroadcast: 'Start broadcast',
+    stopBroadcast: 'Stop broadcast',
+    monitorTitle: 'What the audience sees',
+    monitorIdle: 'idle preview',
+    monitorLive: 'mirroring · live',
+    setupNeededTitle: 'One-time setup',
+    setupNeededBody: "You'll need an AssemblyAI key and a microphone before broadcasting. Set them up under ",
+    setupNeededLink: 'Setup',
   },
-  guards: {
-    noKey: 'Save an API key first.',
-    noDevice: 'Select an audio input device.',
-    singleScreen: 'Only one screen detected — connect a second screen to go fullscreen.',
-  },
-  sidebar: {
-    caption: 'Setup',
-    sections: {
-      config: 'Configuration',
-      source: 'Audio source',
-      journal: 'Log',
-      costs: 'Costs & usage',
-    },
-  },
-  apikey: {
-    placeholder: 'Paste your AssemblyAI key here',
-    placeholderSet: '•••••••••••••• (key saved)',
-    show: 'Show',
-    hide: 'Hide',
-    showAria: 'Show key',
-    hideAria: 'Hide key',
-    save: 'Save',
-    test: 'Test key',
-    testing: 'Verifying…',
-    clear: 'Clear',
-    saved: 'encrypted and stored locally',
-    verified: 'key valid — connection to AssemblyAI succeeded',
-    absent: 'no key saved',
-    unknownError: 'Unknown error.',
-  },
-  device: {
-    label: 'Input device',
-    none: 'No device detected',
-    micFallback: (suffix) => `Microphone (${suffix})`,
-    permissionDenied: 'Microphone access denied.',
-  },
-  vu: {
-    label: 'Input level',
-  },
-  diffuse: {
-    idle: 'Broadcast',
-    connecting: 'Connecting…',
-    streaming: 'Stop broadcast',
-    error: 'Retry',
-  },
-  preview: {
-    title: 'Preview',
-    caption: 'What the audience sees',
-    help: 'mirrors the audience screen exactly',
-    demoTag: 'Demo',
-    liveTag: 'Live',
-    demoAria: 'Demo mode active',
-    liveAria: 'Broadcasting live',
-  },
-  apparence: {
-    title: 'Appearance',
+  appearance: {
+    eyebrow: 'Appearance',
+    titleA: 'How the room ',
+    titleEm: 'reads',
+    titleB: '.',
+    sub: 'Tune the audience screen until it works for the back row. Changes apply live to the broadcast and to the preview below.',
+    previewTitle: 'Audience preview',
+    previewMeta: 'mirrors the audience screen exactly',
+    presetsTitle: 'Presets',
+    presetsSub: 'Three starting points, tuned for different rooms and audiences.',
     reset: 'Reset',
-    resetTooltip: 'Reset all settings',
-    groups: {
-      type: 'Type',
-      colors: 'Colors',
-      layout: 'Layout',
-    },
-    fields: {
-      font: 'Font',
-      weight: 'Weight',
-      size: 'Size',
-      lineHeight: 'Line height',
-      text: 'Text',
-      background: 'Background',
-      live: 'Live text',
-      paddingX: 'Horizontal padding',
-      paddingY: 'Vertical padding',
-      align: 'Alignment',
-      maxLines: 'Maximum lines',
-      animation: 'Animation',
-      animationDescription: 'Soft fade on appearance',
-      chooseColor: 'Choose a color',
-    },
-    weights: {
-      regular: 'Regular (400)',
-      semibold: 'Semibold (600)',
-      extrabold: 'Extrabold (800)',
-    },
-    align: {
-      left: 'Left',
-      center: 'Center',
-      right: 'Right',
-    },
-  },
-  fonts: {
-    Inter: 'Inter (sans)',
-    Manrope: 'Manrope (geometric sans)',
-    'Atkinson Hyperlegible': 'Atkinson Hyperlegible (low-vision friendly)',
-    'IBM Plex Sans': 'IBM Plex Sans',
-    'Roboto Slab': 'Roboto Slab (serif)',
-    'JetBrains Mono': 'JetBrains Mono (mono)',
+    sectionType: 'Type',
+    sectionColors: 'Colors',
+    sectionLayout: 'Layout',
+    sectionBehavior: 'Behavior',
+    fieldFont: 'Font',
+    fieldWeight: 'Weight',
+    fieldSize: 'Size',
+    fieldLineHeight: 'Line height',
+    fieldTextColor: 'Text (final)',
+    fieldBgColor: 'Background',
+    fieldLiveColor: 'Live (partial)',
+    fieldPaddingX: 'Horizontal padding',
+    fieldPaddingY: 'Vertical padding',
+    fieldAlignment: 'Alignment',
+    fieldMaxLines: 'Maximum lines',
+    weight400: 'Regular',
+    weight500: 'Medium',
+    weight600: 'Semibold',
+    weight700: 'Bold',
+    alignLeft: 'Left',
+    alignCenter: 'Center',
+    alignRight: 'Right',
+    behaviorFade: 'Soft fade on appearance',
+    behaviorFadeSub: 'New lines fade in instead of cutting',
+    behaviorPartial: 'Show partial transcripts',
+    behaviorPartialSub: "Words appear as they're recognized",
+    behaviorAutoScroll: 'Auto-scroll',
+    behaviorAutoScrollSub: 'Always show the most recent line',
   },
   presets: {
-    'grand-contraste': 'High contrast',
-    sobre: 'Subtle',
-    'lecture-longue': 'Long reading',
+    'high-contrast': 'High contrast',
+    subtle: 'Subtle',
+    'long-reading': 'Long reading',
   },
-  usage: {
+  fonts: {
+    Inter: 'Inter',
+    Manrope: 'Manrope',
+    'Atkinson Hyperlegible': 'Atkinson Hyperlegible',
+    'IBM Plex Sans': 'IBM Plex Sans',
+    'Roboto Slab': 'Roboto Slab',
+    'JetBrains Mono': 'JetBrains Mono',
+  },
+  setup: {
+    eyebrow: 'Setup',
+    titleA: 'One-time ',
+    titleEm: 'configuration',
+    titleB: '.',
+    sub: 'Paste your AssemblyAI key, pick a microphone, keep an eye on cost. Set it once and forget it — everything stays on this machine.',
+    languageTitle: 'Interface language',
+    languageSub: 'Operator UI only. Transcription language is set separately in shared/constants.ts.',
+    languageEnglish: 'English',
+    languageFrench: 'Français',
+    languageAuto: 'Auto · OS',
+    keyTitle: 'AssemblyAI key',
+    keySub: 'Encrypted at rest in your OS Keychain. Never sent anywhere except AssemblyAI.',
+    keyPlaceholder: 'Paste your AssemblyAI key here…',
+    save: 'Save',
+    test: 'Test',
+    testing: 'Verifying…',
+    clear: 'Clear',
+    keyValid: 'Key valid · saved to Keychain',
+    keyAbsent: 'No key saved',
+    keyInvalid: 'Invalid key',
+    audioTitle: 'Audio source',
+    audioSub: 'Watch the meter dance to verify your mic.',
+    deviceLabel: 'Input device',
+    deviceNone: 'No device detected',
+    permissionDenied: 'Microphone access denied.',
+    levelLabel: 'Input level',
+    costsTitle: 'Costs & usage',
+    costsSub: 'Local estimate based on session duration.',
     sessionLabel: 'Current session',
     cumulLabel: 'Estimated total',
     elapsed: (m, s) => `${m}m ${s}s elapsed`,
     hoursAndSessions: (h, n) => `${h} h · ${n} sessions`,
-    rateLabel: 'Rate',
-    rateSuffix: '$/h',
-    help:
-      'Local estimate based on session duration. Check the actual amount on the AssemblyAI dashboard.',
-    dashboard: 'Dashboard ↗',
-    reset: 'Reset',
-    resetSince: (date) => `since ${date}`,
+    rateLabel: 'Rate ($/hour)',
+    dashboard: 'Dashboard',
+    resetUsage: 'Reset',
+    logTitle: 'Activity log',
+    logSub: 'Recent events from this session.',
+    logEmpty: 'No events yet.',
+    logClear: 'Clear',
   },
-  journal: {
-    empty: '— no events —',
+  log: {
     streamState: (state) => `Stream state: ${state}`,
     captureError: (msg) => `Audio capture: ${msg}`,
     streamStartFailed: 'Could not start.',
@@ -441,70 +429,62 @@ const en: Messages = {
     newScreen: 'New screen detected — move the display?',
     screenLost: 'Screen disconnected — display moved back to the primary screen.',
   },
-  language: {
-    tooltip: 'Switch language',
-    fr: 'FR',
-    en: 'EN',
-  },
+  languagePill: { tooltip: 'Switch language' },
+  themeToggle: { tooltip: 'Switch theme' },
 };
 
 const dictionaries: Record<Locale, Messages> = { fr, en };
 
-const STORAGE_KEY = 'murmure.locale';
-
-function detectInitialLocale(): Locale {
-  if (typeof window === 'undefined') return 'fr';
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === 'fr' || stored === 'en') return stored;
-  } catch {
-    // localStorage may be inaccessible; fall through
-  }
-  const lang = (navigator.language || 'fr').toLowerCase();
-  if (lang.startsWith('en')) return 'en';
-  return 'fr';
-}
-
 type LocaleContextValue = {
-  locale: Locale;
-  setLocale: (next: Locale) => void;
-  toggleLocale: () => void;
+  choice: LanguageChoice;
+  resolved: Locale;
+  setChoice: (next: LanguageChoice) => void;
+  cycle: () => void;
   t: Messages;
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: ReactNode }): JSX.Element {
-  const [locale, setLocaleState] = useState<Locale>(() => detectInitialLocale());
+  const [choice, setChoiceState] = useState<LanguageChoice>('auto');
+  const [resolved, setResolved] = useState<Locale>('en');
 
-  const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const toggleLocale = useCallback(() => {
-    setLocaleState((prev) => {
-      const next: Locale = prev === 'fr' ? 'en' : 'fr';
-      try {
-        window.localStorage.setItem(STORAGE_KEY, next);
-      } catch {
-        // ignore
-      }
-      return next;
+  // Initial bootstrap from main.
+  useEffect(() => {
+    let active = true;
+    void window.diffuseur.language.get().then((s) => {
+      if (!active) return;
+      setChoiceState(s.choice);
+      setResolved(s.resolved);
     });
+    const off = window.diffuseur.language.onChange((s) => {
+      setChoiceState(s.choice);
+      setResolved(s.resolved);
+    });
+    return () => {
+      active = false;
+      off();
+    };
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
+    document.documentElement.lang = resolved;
+  }, [resolved]);
+
+  const setChoice = useCallback((next: LanguageChoice) => {
+    void window.diffuseur.language.set(next);
+  }, []);
+
+  const cycle = useCallback(() => {
+    const order: LanguageChoice[] = ['en', 'fr', 'auto'];
+    const idx = order.indexOf(choice);
+    const next = order[(idx + 1) % order.length];
+    void window.diffuseur.language.set(next);
+  }, [choice]);
 
   const value = useMemo<LocaleContextValue>(
-    () => ({ locale, setLocale, toggleLocale, t: dictionaries[locale] }),
-    [locale, setLocale, toggleLocale],
+    () => ({ choice, resolved, setChoice, cycle, t: dictionaries[resolved] }),
+    [choice, resolved, setChoice, cycle],
   );
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;

@@ -1,13 +1,28 @@
 import { BrowserWindow, ipcMain, screen, shell } from 'electron';
-import { IPC, type ApiKeyTestResult, type DisplayState, type MockState, type StreamState } from '../shared/ipc';
+import {
+  IPC,
+  type ApiKeyTestResult,
+  type DisplayState,
+  type LanguageChoice,
+  type LanguageState,
+  type MockState,
+  type StreamState,
+  type Tab,
+  type Theme,
+} from '../shared/ipc';
 import { ASSEMBLY_DASHBOARD_URL } from '../shared/constants';
 import {
   clearApiKey,
   getApiKey,
+  getLanguageChoice,
   getStyleSettings,
+  getTheme,
   hasApiKey,
   resetStyle,
+  resolveLocale,
   saveApiKey,
+  setLanguageChoice,
+  setTheme,
   updateStyle,
 } from './settings';
 import { findDisplay, listDisplays } from './displays';
@@ -75,6 +90,29 @@ function setMockEnabled(enabled: boolean): void {
   mockEnabled = enabled;
   const payload: MockState = { enabled };
   broadcast(IPC.MockState, payload);
+}
+
+function buildLanguageState(choice: LanguageChoice = getLanguageChoice()): LanguageState {
+  return { choice, resolved: resolveLocale(choice) };
+}
+
+// Listeners other modules (menu.ts) can hook into so they rebuild themselves
+// when language changes.
+const languageChangeListeners: Set<(state: LanguageState) => void> = new Set();
+const themeChangeListeners: Set<(theme: Theme) => void> = new Set();
+
+export function onLanguageChange(cb: (state: LanguageState) => void): () => void {
+  languageChangeListeners.add(cb);
+  return () => languageChangeListeners.delete(cb);
+}
+
+export function onThemeChange(cb: (theme: Theme) => void): () => void {
+  themeChangeListeners.add(cb);
+  return () => themeChangeListeners.delete(cb);
+}
+
+export function navigateToTab(tab: Tab): void {
+  sendToControl(IPC.TabNavigate, tab);
 }
 
 function setupClientCallbacks(): AssemblyAIClient {
@@ -210,6 +248,23 @@ export function registerIpc(controlWindow: BrowserWindow): void {
   ipcMain.handle(IPC.UsageOpenDashboard, () => {
     void shell.openExternal(ASSEMBLY_DASHBOARD_URL);
     return { ok: true };
+  });
+
+  ipcMain.handle(IPC.ThemeGet, () => getTheme());
+  ipcMain.handle(IPC.ThemeSet, (_e, payload: { theme: Theme }) => {
+    const next = setTheme(payload.theme);
+    broadcast(IPC.ThemeChanged, next);
+    themeChangeListeners.forEach((cb) => cb(next));
+    return next;
+  });
+
+  ipcMain.handle(IPC.LanguageGet, () => buildLanguageState());
+  ipcMain.handle(IPC.LanguageSet, (_e, payload: { choice: LanguageChoice }) => {
+    const choice = setLanguageChoice(payload.choice);
+    const state = buildLanguageState(choice);
+    broadcast(IPC.LanguageChanged, state);
+    languageChangeListeners.forEach((cb) => cb(state));
+    return state;
   });
 
   // Escape exits the display fullscreen, listened on each window's webContents.

@@ -2,7 +2,7 @@ export type StyleSettings = {
   fontSize: number;
   lineHeight: number;
   fontFamily: string;
-  fontWeight: 400 | 600 | 800;
+  fontWeight: 400 | 500 | 600 | 700;
   textColor: string;
   bgColor: string;
   liveColor: string;
@@ -11,21 +11,28 @@ export type StyleSettings = {
   textAlign: 'left' | 'center' | 'right';
   maxLines: number;
   transitionsEnabled: boolean;
+  // Behaviour toggles surfaced in the Appearance tab.
+  showPartial: boolean;
+  autoScroll: boolean;
+  presetId: StylePresetId | null;
 };
 
 export const DEFAULT_STYLE: StyleSettings = {
-  fontSize: 72,
-  lineHeight: 1.3,
+  fontSize: 84,
+  lineHeight: 1.25,
   fontFamily: 'Inter',
-  fontWeight: 600,
+  fontWeight: 700,
   textColor: '#FFFFFF',
   bgColor: '#000000',
-  liveColor: '#A0A0A0',
+  liveColor: '#FFFFFF',
   paddingX: 64,
   paddingY: 48,
   textAlign: 'left',
   maxLines: 6,
   transitionsEnabled: true,
+  showPartial: true,
+  autoScroll: true,
+  presetId: 'high-contrast',
 };
 
 // Font IDs only — display labels live in the renderer's i18n layer.
@@ -39,42 +46,57 @@ export const FONT_FAMILY_IDS = [
 ] as const;
 export type FontFamilyId = (typeof FONT_FAMILY_IDS)[number];
 
-export type StylePresetId = 'grand-contraste' | 'sobre' | 'lecture-longue';
+export type StylePresetId = 'high-contrast' | 'subtle' | 'long-reading';
+
+const PRESET_BASE: Omit<StyleSettings, 'fontSize' | 'lineHeight' | 'fontWeight' | 'textColor' | 'bgColor' | 'liveColor' | 'fontFamily' | 'presetId'> = {
+  paddingX: 64,
+  paddingY: 48,
+  textAlign: 'left',
+  maxLines: 6,
+  transitionsEnabled: true,
+  showPartial: true,
+  autoScroll: true,
+};
 
 export const STYLE_PRESETS: Record<StylePresetId, { settings: StyleSettings }> = {
-  'grand-contraste': {
+  'high-contrast': {
     settings: {
-      ...DEFAULT_STYLE,
-      fontSize: 96,
-      fontWeight: 800,
+      ...PRESET_BASE,
+      fontFamily: 'Inter',
+      fontWeight: 700,
+      fontSize: 84,
+      lineHeight: 1.25,
       textColor: '#FFFFFF',
       bgColor: '#000000',
-      liveColor: '#888888',
-      fontFamily: 'Atkinson Hyperlegible',
+      liveColor: '#FFFFFF',
+      presetId: 'high-contrast',
     },
   },
-  sobre: {
+  subtle: {
     settings: {
-      ...DEFAULT_STYLE,
-      fontSize: 56,
-      fontWeight: 400,
-      textColor: '#E8E4DA',
-      bgColor: '#1A1A1A',
-      liveColor: '#807A6E',
+      ...PRESET_BASE,
       fontFamily: 'Inter',
+      fontWeight: 500,
+      fontSize: 64,
+      lineHeight: 1.4,
+      textColor: '#E8E6DC',
+      bgColor: '#1B1A15',
+      liveColor: '#A8A496',
+      presetId: 'subtle',
     },
   },
-  'lecture-longue': {
+  'long-reading': {
     settings: {
-      ...DEFAULT_STYLE,
-      fontSize: 64,
-      lineHeight: 1.5,
-      fontWeight: 400,
-      textColor: '#F5F5F5',
-      bgColor: '#1C1C24',
-      liveColor: '#9090A0',
+      ...PRESET_BASE,
       fontFamily: 'Atkinson Hyperlegible',
+      fontWeight: 400,
+      fontSize: 56,
+      lineHeight: 1.6,
+      textColor: '#F4F3EE',
+      bgColor: '#14130F',
+      liveColor: '#A8A496',
       maxLines: 8,
+      presetId: 'long-reading',
     },
   },
 };

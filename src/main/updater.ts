@@ -20,10 +20,6 @@ function setStatus(status: UpdateStatus): void {
   listeners.forEach((listener) => listener(status));
 }
 
-function notify(status: UpdateStatus): void {
-  setStatus(status);
-}
-
 async function showDialog(
   parentWindow: BrowserWindow | null,
   options: MessageBoxOptions,
@@ -40,27 +36,27 @@ export function initUpdater(): void {
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('checking-for-update', () => {
-    notify({ type: 'checking' });
+    setStatus({ type: 'checking' });
   });
 
   autoUpdater.on('update-available', (info: UpdateInfo) => {
-    notify({ type: 'available', version: info.version });
+    setStatus({ type: 'available', version: info.version });
   });
 
   autoUpdater.on('update-not-available', () => {
-    notify({ type: 'not-available' });
+    setStatus({ type: 'not-available' });
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    notify({ type: 'downloading', percent: progress.percent });
+    setStatus({ type: 'downloading', percent: progress.percent });
   });
 
   autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
-    notify({ type: 'downloaded', version: info.version });
+    setStatus({ type: 'downloaded', version: info.version });
   });
 
   autoUpdater.on('error', (err) => {
-    notify({ type: 'error', message: err?.message ?? 'Unknown error' });
+    setStatus({ type: 'error', message: err?.message ?? 'Unknown error' });
   });
 }
 
@@ -69,7 +65,7 @@ export async function checkForUpdates(): Promise<UpdateCheckResult | null> {
     return await autoUpdater.checkForUpdates();
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    notify({ type: 'error', message });
+    setStatus({ type: 'error', message });
     return null;
   }
 }
@@ -79,7 +75,7 @@ export async function downloadUpdate(): Promise<void> {
     await autoUpdater.downloadUpdate();
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Download failed';
-    notify({ type: 'error', message });
+    setStatus({ type: 'error', message });
   }
 }
 

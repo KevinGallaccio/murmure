@@ -344,7 +344,7 @@ export function App(): JSX.Element {
               {t.language.en}
             </button>
           </div>
-          <span className="version">v 1.0.6</span>
+          <span className="version">v 1.0.7</span>
         </div>
       </header>
 

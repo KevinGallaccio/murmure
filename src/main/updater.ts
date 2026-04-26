@@ -141,7 +141,7 @@ export async function checkForUpdatesInteractive(parentWindow: BrowserWindow | n
       await autoUpdater.downloadUpdate();
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
+    const message = err instanceof Error ? err.message : 'Erreur inconnue';
     await showDialog(parentWindow, {
       type: 'error',
       title: 'Erreur de mise à jour',

@@ -1,7 +1,8 @@
 import Store from 'electron-store';
-import { safeStorage } from 'electron';
+import { app, safeStorage } from 'electron';
 import { DEFAULT_STYLE, type StyleSettings } from '../shared/style';
 import { DEFAULT_RATE_PER_HOUR } from '../shared/constants';
+import type { LanguageChoice, ResolvedLocale, Theme } from '../shared/ipc';
 
 export type SessionRecord = {
   startedAt: string;
@@ -13,6 +14,8 @@ export type PersistedState = {
   apiKey: { ciphertext: string } | null;
   selectedDeviceId: string | null;
   style: StyleSettings;
+  theme: Theme;
+  language: LanguageChoice;
   usage: {
     totalSeconds: number;
     sessions: SessionRecord[];
@@ -25,6 +28,8 @@ const initialState: PersistedState = {
   apiKey: null,
   selectedDeviceId: null,
   style: DEFAULT_STYLE,
+  theme: 'light',
+  language: 'auto',
   usage: {
     totalSeconds: 0,
     sessions: [],
@@ -133,4 +138,29 @@ export function resetUsage(): PersistedState['usage'] {
   };
   store.set('usage', next);
   return next;
+}
+
+export function getTheme(): Theme {
+  return store.get('theme') ?? 'light';
+}
+
+export function setTheme(theme: Theme): Theme {
+  store.set('theme', theme);
+  return theme;
+}
+
+export function getLanguageChoice(): LanguageChoice {
+  return store.get('language') ?? 'auto';
+}
+
+export function setLanguageChoice(choice: LanguageChoice): LanguageChoice {
+  store.set('language', choice);
+  return choice;
+}
+
+export function resolveLocale(choice: LanguageChoice = getLanguageChoice()): ResolvedLocale {
+  if (choice === 'fr') return 'fr';
+  if (choice === 'en') return 'en';
+  const sys = (app.getLocale() || '').toLowerCase();
+  return sys.startsWith('fr') ? 'fr' : 'en';
 }

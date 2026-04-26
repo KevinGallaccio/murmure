@@ -62,6 +62,20 @@ export const IPC = {
   UsageSetRate: 'usage:set-rate',
   UsageUpdate: 'usage:update',
   UsageOpenDashboard: 'usage:open-dashboard',
+
+  // Theme & language are persisted in electron-store so both the renderer
+  // and the main process (menu / dialogs) can read them.
+  ThemeGet: 'theme:get',
+  ThemeSet: 'theme:set',
+  ThemeChanged: 'theme:changed',
+
+  LanguageGet: 'language:get',
+  LanguageSet: 'language:set',
+  LanguageChanged: 'language:changed',
+
+  // Main → renderer: instructs the operator UI to switch to a specific
+  // tab (e.g. when the user clicks "Settings…" in the native menu).
+  TabNavigate: 'tab:navigate',
 } as const;
 
 export type StyleUpdate = Partial<StyleSettings>;
@@ -73,3 +87,13 @@ export type DisplayState = {
 };
 
 export type MockState = { enabled: boolean };
+
+export type Theme = 'light' | 'dark';
+export type LanguageChoice = 'en' | 'fr' | 'auto';
+export type ResolvedLocale = 'en' | 'fr';
+export type Tab = 'stage' | 'appearance' | 'setup';
+
+export type LanguageState = {
+  choice: LanguageChoice;
+  resolved: ResolvedLocale;
+};

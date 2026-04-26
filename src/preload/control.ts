@@ -4,10 +4,14 @@ import type {
   ApiKeyTestResult,
   DisplayInfo,
   DisplayState,
+  LanguageChoice,
+  LanguageState,
   MockState,
   StreamErrorPayload,
   StreamState,
   StyleUpdate,
+  Tab,
+  Theme,
   TranscriptFinal,
   TranscriptPartial,
   UsageUpdate,
@@ -67,6 +71,20 @@ const api = {
     setRate: (ratePerHour: number): Promise<UsageUpdate> =>
       ipcRenderer.invoke(IPC.UsageSetRate, { ratePerHour }),
     openDashboard: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.UsageOpenDashboard),
+  },
+  theme: {
+    get: (): Promise<Theme> => ipcRenderer.invoke(IPC.ThemeGet),
+    set: (theme: Theme): Promise<Theme> => ipcRenderer.invoke(IPC.ThemeSet, { theme }),
+    onChange: (cb: (t: Theme) => void) => subscribe<Theme>(IPC.ThemeChanged, cb),
+  },
+  language: {
+    get: (): Promise<LanguageState> => ipcRenderer.invoke(IPC.LanguageGet),
+    set: (choice: LanguageChoice): Promise<LanguageState> =>
+      ipcRenderer.invoke(IPC.LanguageSet, { choice }),
+    onChange: (cb: (s: LanguageState) => void) => subscribe<LanguageState>(IPC.LanguageChanged, cb),
+  },
+  tab: {
+    onNavigate: (cb: (t: Tab) => void) => subscribe<Tab>(IPC.TabNavigate, cb),
   },
 };
 

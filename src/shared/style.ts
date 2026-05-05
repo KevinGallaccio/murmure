@@ -15,7 +15,14 @@ export type StyleSettings = {
   showPartial: boolean;
   autoScroll: boolean;
   presetId: StylePresetId | null;
+  // How to make subtitles legible when overlaid on the video feed:
+  //   none   = raw text on the configured bg
+  //   shadow = strong text-shadow, no backdrop (cinematic, default)
+  //   scrim  = translucent dark gradient at the bottom of the video
+  subtitleBackdrop: SubtitleBackdrop;
 };
+
+export type SubtitleBackdrop = 'none' | 'shadow' | 'scrim';
 
 export const DEFAULT_STYLE: StyleSettings = {
   fontSize: 84,
@@ -33,6 +40,7 @@ export const DEFAULT_STYLE: StyleSettings = {
   showPartial: true,
   autoScroll: true,
   presetId: 'high-contrast',
+  subtitleBackdrop: 'shadow',
 };
 
 // Font IDs only — display labels live in the renderer's i18n layer.
@@ -56,6 +64,7 @@ const PRESET_BASE: Omit<StyleSettings, 'fontSize' | 'lineHeight' | 'fontWeight' 
   transitionsEnabled: true,
   showPartial: true,
   autoScroll: true,
+  subtitleBackdrop: 'shadow',
 };
 
 export const STYLE_PRESETS: Record<StylePresetId, { settings: StyleSettings }> = {
@@ -83,6 +92,7 @@ export const STYLE_PRESETS: Record<StylePresetId, { settings: StyleSettings }> =
       bgColor: '#1B1A15',
       liveColor: '#A8A496',
       presetId: 'subtle',
+      subtitleBackdrop: 'scrim',
     },
   },
   'long-reading': {

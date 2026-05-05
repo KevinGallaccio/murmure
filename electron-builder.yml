@@ -30,7 +30,8 @@ mac:
     NSMicrophoneUsageDescription: >-
       murmure a besoin du microphone pour transcrire l'audio en direct.
     NSCameraUsageDescription: >-
-      murmure n'utilise pas la caméra.
+      murmure peut afficher un retour caméra derrière les sous-titres en direct
+      sur l'écran d'audience.
 win:
   target:
     - target: nsis

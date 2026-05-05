@@ -1,8 +1,14 @@
+import { useEffect, useRef, useState } from 'react';
 import type { StreamState } from '../../shared/ipc';
 import type { StyleSettings } from '../../shared/style';
 import { useT } from '../i18n';
-import { IconPlay, IconStop, IconExternal, IconEye } from './Icons';
+import { IconPlay, IconStop, IconExternal, IconEye, IconVideo, IconVideoOff } from './Icons';
 import { MOCK_FRENCH_LINES } from '../../shared/constants';
+
+// Same shadow string the audience window uses, so the operator preview
+// matches the audience read exactly when subtitleBackdrop === 'shadow'.
+const SUBTITLE_TEXT_SHADOW =
+  '0 2px 8px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6), 0 1px 0 rgba(0,0,0,0.5)';
 
 type Props = {
   streamState: StreamState;
@@ -16,8 +22,11 @@ type Props = {
   finalLines: string[];
   partial: string | null;
   appearance: StyleSettings;
+  videoEnabled: boolean;
+  videoDeviceId: string | null;
   onBroadcastToggle: () => void;
   onDisplayToggle: () => void;
+  onVideoToggle: () => void;
   onGoToSetup: () => void;
 };
 
@@ -33,8 +42,11 @@ export function StagePage({
   finalLines,
   partial,
   appearance,
+  videoEnabled,
+  videoDeviceId,
   onBroadcastToggle,
   onDisplayToggle,
+  onVideoToggle,
   onGoToSetup,
 }: Props): JSX.Element {
   const t = useT();
@@ -63,7 +75,13 @@ export function StagePage({
     color: appearance.textColor,
     textAlign: appearance.textAlign,
     padding: `${Math.round(appearance.paddingY * 0.5)}px ${Math.round(appearance.paddingX * 0.5)}px`,
+    textShadow:
+      videoEnabled && appearance.subtitleBackdrop === 'shadow' ? SUBTITLE_TEXT_SHADOW : 'none',
+    position: 'relative',
+    zIndex: 2,
   };
+
+  const hasVideoDevice = !!videoDeviceId;
 
   return (
     <div className="page">
@@ -78,6 +96,65 @@ export function StagePage({
       </div>
 
       <div className="stage-grid">
+        {/* Outputs deck — destinations of the broadcast (display + video).
+            Lives above the broadcast card so the operator sets up the
+            audience-screen plumbing before pressing the central CTA. */}
+        <div className="outputs-deck">
+          <div className="output-cell">
+            <div className="output-row">
+              <span className="output-num">01</span>
+              <span className="output-label">{t.display.label}</span>
+              <span
+                className={`output-dot ${displayOpen ? 'on' : ''}`}
+                aria-hidden="true"
+              />
+            </div>
+            <div className="output-state">
+              {!displayOpen
+                ? t.display.statusClosed
+                : displayFullscreen
+                  ? t.display.fullscreen
+                  : t.display.statusOpen}
+            </div>
+            <button
+              type="button"
+              className="output-action"
+              onClick={onDisplayToggle}
+            >
+              <span className="output-action-text">
+                {displayOpen ? t.display.closeButton : t.display.openButton}
+              </span>
+              <IconExternal size={11} />
+            </button>
+          </div>
+
+          <div className="output-cell">
+            <div className="output-row">
+              <span className="output-num">02</span>
+              <span className="output-label">{t.video.label}</span>
+              <span
+                className={`output-dot ${videoEnabled ? 'on' : ''}`}
+                aria-hidden="true"
+              />
+            </div>
+            <div className="output-state">
+              {videoEnabled ? t.video.statusOn : t.video.statusOff}
+            </div>
+            <button
+              type="button"
+              className="output-action"
+              onClick={onVideoToggle}
+              disabled={!hasVideoDevice}
+              title={!hasVideoDevice ? t.video.pickFirst : undefined}
+            >
+              <span className="output-action-text">
+                {videoEnabled ? t.video.toggleOff : t.video.toggleOn}
+              </span>
+              {videoEnabled ? <IconVideoOff size={11} /> : <IconVideo size={11} />}
+            </button>
+          </div>
+        </div>
+
         {/* Broadcast control card */}
         <div className="broadcast-card">
           <div className="timer-block">
@@ -103,23 +180,6 @@ export function StagePage({
               {connecting ? t.state.connecting : broadcastLabel}
             </button>
           </div>
-
-          <div className="display-block">
-            <div className="display-status">
-              {t.display.label}
-              <span className="v">
-                {!displayOpen
-                  ? t.display.statusClosed
-                  : displayFullscreen
-                    ? t.display.fullscreen
-                    : t.display.statusOpen}
-              </span>
-            </div>
-            <button type="button" className="btn" onClick={onDisplayToggle}>
-              <IconExternal size={13} />
-              {displayOpen ? t.display.closeButton : t.display.openButton}
-            </button>
-          </div>
         </div>
 
         {/* Audience monitor */}
@@ -132,15 +192,36 @@ export function StagePage({
           <div
             className="monitor-screen"
             style={{
-              background: appearance.bgColor,
+              background: videoEnabled ? '#000' : appearance.bgColor,
               justifyContent:
                 appearance.textAlign === 'center'
                   ? 'center'
                   : appearance.textAlign === 'right'
                     ? 'flex-end'
                     : 'flex-start',
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
+            {videoEnabled && videoDeviceId && (
+              <MonitorVideoPreview deviceId={videoDeviceId} />
+            )}
+            {videoEnabled && appearance.subtitleBackdrop === 'scrim' && (
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: '45%',
+                  background:
+                    'linear-gradient(to top, rgba(0,0,0,0.78), rgba(0,0,0,0))',
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
             {broadcasting && (
               <div className="badge">
                 <span className="pdot" aria-hidden="true" />
@@ -228,4 +309,83 @@ function tokenizeForStream(text: string): StreamToken[] {
   return parts
     .filter((p) => p.length > 0)
     .map((p) => ({ kind: /^\s+$/.test(p) ? ('space' as const) : ('word' as const), text: p }));
+}
+
+// Independent webcam stream for the operator's monitor card. The audience
+// display opens its own stream in the renderer-display process; modern OS
+// webcam stacks support multiple consumers, but on rare older Windows UVC
+// drivers the second open fails and we surface that gently to the operator.
+function MonitorVideoPreview({ deviceId }: { deviceId: string }): JSX.Element {
+  const t = useT();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    let stream: MediaStream | null = null;
+    const open = async (): Promise<void> => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: { exact: deviceId },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((tr) => tr.stop());
+          return;
+        }
+        if (videoRef.current) videoRef.current.srcObject = stream;
+        setError(null);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message ?? t.video.previewUnavailable);
+      }
+    };
+    void open();
+    return () => {
+      cancelled = true;
+      if (stream) stream.getTracks().forEach((tr) => tr.stop());
+      if (videoRef.current) videoRef.current.srcObject = null;
+    };
+  }, [deviceId, t.video.previewUnavailable]);
+
+  if (error) {
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'rgba(255,255,255,0.55)',
+          fontSize: 12,
+          padding: 16,
+          textAlign: 'center',
+          zIndex: 0,
+        }}
+      >
+        {t.video.previewUnavailable}
+      </div>
+    );
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      muted
+      playsInline
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        zIndex: 0,
+      }}
+    />
+  );
 }

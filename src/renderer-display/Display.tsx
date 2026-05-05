@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { StyleSettings } from '../shared/style';
 import { DEFAULT_STYLE } from '../shared/style';
 
+type VideoState = { enabled: boolean; deviceId: string | null };
+
 declare global {
   interface Window {
     diffuseurDisplay: {
@@ -13,9 +15,15 @@ declare global {
       onDisplayState: (
         cb: (s: { isOpen: boolean; displayId: number | null; isFullscreen: boolean }) => void,
       ) => () => void;
+      onVideoState: (cb: (s: VideoState) => void) => () => void;
     };
   }
 }
+
+// Strong drop-shadow tuned for white text on arbitrary photographic
+// backgrounds — the same look TV captioning uses.
+const SUBTITLE_TEXT_SHADOW =
+  '0 2px 8px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6), 0 1px 0 rgba(0,0,0,0.5)';
 
 type Line = { id: string; text: string; partial: boolean };
 
@@ -31,17 +39,31 @@ function applyStyleVars(settings: StyleSettings): void {
   root.setProperty('--padding-x', `${settings.paddingX}px`);
   root.setProperty('--padding-y', `${settings.paddingY}px`);
   root.setProperty('--text-align', settings.textAlign);
+  root.setProperty(
+    '--text-shadow',
+    settings.subtitleBackdrop === 'shadow' ? SUBTITLE_TEXT_SHADOW : 'none',
+  );
 }
 
 export function Display(): JSX.Element {
   const [style, setStyle] = useState<StyleSettings>(DEFAULT_STYLE);
   const [lines, setLines] = useState<Line[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [video, setVideo] = useState<VideoState>({ enabled: false, deviceId: null });
   const turnRef = useRef<string>('');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     applyStyleVars(style);
   }, [style]);
+
+  // Toggle a body class so CSS can override --bg-color (the user-configured
+  // solid background) with black behind the video element. Without this the
+  // bgColor still bleeds through the letterboxed margins of object-fit:cover.
+  useEffect(() => {
+    document.body.classList.toggle('video-mode', video.enabled);
+  }, [video.enabled]);
 
   useEffect(() => {
     const offStyle = window.diffuseurDisplay.onStyleApply((s) => setStyle(s));
@@ -56,24 +78,106 @@ export function Display(): JSX.Element {
       document.body.classList.toggle('fullscreen', s.isFullscreen);
       setIsFullscreen(s.isFullscreen);
     });
+    const offVideo = window.diffuseurDisplay.onVideoState((s) => setVideo(s));
     return () => {
       offStyle();
       offPartial();
       offFinal();
       offFs();
+      offVideo();
     };
   }, [style.maxLines]);
+
+  // Webcam lifecycle: open when (enabled + deviceId), tear down otherwise.
+  // We request the camera's native max resolution via aspirational ideals —
+  // getUserMedia negotiates down on its own when the camera or CPU can't
+  // sustain it. If `deviceId: { exact }` fails (camera unplugged since the
+  // id was persisted), fall back to the default device so the audience
+  // screen still gets some video instead of going black.
+  useEffect(() => {
+    let cancelled = false;
+    const stopCurrent = () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      if (videoRef.current) videoRef.current.srcObject = null;
+    };
+
+    if (!video.enabled || !video.deviceId) {
+      stopCurrent();
+      return () => {};
+    }
+
+    const open = async (): Promise<void> => {
+      stopCurrent();
+      const baseConstraints: MediaTrackConstraints = {
+        width: { ideal: 4096 },
+        height: { ideal: 2160 },
+      };
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { ...baseConstraints, deviceId: { exact: video.deviceId! } },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      } catch (err) {
+        if (cancelled) return;
+        // Most likely OverconstrainedError (camera missing). Retry with no
+        // deviceId pin so the audience screen still gets *some* video.
+        try {
+          const fallback = await navigator.mediaDevices.getUserMedia({
+            video: baseConstraints,
+            audio: false,
+          });
+          if (cancelled) {
+            fallback.getTracks().forEach((t) => t.stop());
+            return;
+          }
+          streamRef.current = fallback;
+          if (videoRef.current) videoRef.current.srcObject = fallback;
+        } catch (fallbackErr) {
+          // Surface to console only — operator notices the absence on screen.
+          console.error('[murmure] camera open failed', err, fallbackErr);
+        }
+      }
+    };
+
+    void open();
+    return () => {
+      cancelled = true;
+      stopCurrent();
+    };
+  }, [video.enabled, video.deviceId]);
 
   // The audience display never shows mock content. The Hugo loop is a tool
   // for the operator's preview pane (in the Stage / Appearance tabs of the
   // control window), not for the people in the room. When the window is
   // open but no transcript has arrived yet, we show the brand mark as a
-  // calm, identity-anchored placeholder.
+  // calm, identity-anchored placeholder — but suppress it once video is on,
+  // since the camera feed already fills the space.
   const visibleLines = lines.slice(-style.maxLines);
-  const showPlaceholder = visibleLines.length === 0;
+  const showPlaceholder = visibleLines.length === 0 && !video.enabled;
 
   return (
     <div className="display-stage">
+      {video.enabled && (
+        <video
+          ref={videoRef}
+          className="display-video"
+          autoPlay
+          muted
+          playsInline
+        />
+      )}
+      {video.enabled && style.subtitleBackdrop === 'scrim' && (
+        <div className="display-scrim" aria-hidden="true" />
+      )}
       {showPlaceholder ? (
         <div className="display-placeholder" aria-hidden="true">
           <svg viewBox="0 0 100 100" width="160" height="160">

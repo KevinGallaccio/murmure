@@ -27,6 +27,15 @@ export type Messages = {
     statusClosed: string;
     label: string;
   };
+  video: {
+    label: string;
+    toggleOn: string;
+    toggleOff: string;
+    statusOn: string;
+    statusOff: string;
+    pickFirst: string;
+    previewUnavailable: string;
+  };
   stage: {
     eyebrow: string;
     titleA: string;
@@ -83,6 +92,11 @@ export type Messages = {
     behaviorPartialSub: string;
     behaviorAutoScroll: string;
     behaviorAutoScrollSub: string;
+    subtitleBackdropLabel: string;
+    subtitleBackdropSub: string;
+    subtitleBackdropNone: string;
+    subtitleBackdropShadow: string;
+    subtitleBackdropScrim: string;
   };
   presets: { 'high-contrast': string; subtle: string; 'long-reading': string };
   fonts: Record<string, string>;
@@ -122,6 +136,11 @@ export type Messages = {
     deviceNone: string;
     permissionDenied: string;
     levelLabel: string;
+    videoTitle: string;
+    videoSub: string;
+    videoDeviceLabel: string;
+    videoDeviceNone: string;
+    videoPermissionDenied: string;
     costsTitle: string;
     costsSub: string;
     sessionLabel: string;
@@ -185,6 +204,15 @@ const fr: Messages = {
     statusClosed: 'Fermé',
     label: 'Affichage',
   },
+  video: {
+    label: 'Vidéo',
+    toggleOn: 'Activer la vidéo',
+    toggleOff: 'Désactiver la vidéo',
+    statusOn: 'Active',
+    statusOff: 'Inactive',
+    pickFirst: "Choisissez d'abord une source vidéo dans Réglages",
+    previewUnavailable: "Aperçu indisponible — la caméra est probablement utilisée par l'affichage",
+  },
   stage: {
     eyebrow: 'Régie',
     titleA: 'Rendre la parole ',
@@ -241,6 +269,11 @@ const fr: Messages = {
     behaviorPartialSub: 'Les mots apparaissent au fur et à mesure',
     behaviorAutoScroll: 'Défilement automatique',
     behaviorAutoScrollSub: 'Toujours afficher la dernière ligne',
+    subtitleBackdropLabel: 'Lisibilité sur la vidéo',
+    subtitleBackdropSub: "Apparaît quand un retour caméra est diffusé derrière les sous-titres.",
+    subtitleBackdropNone: 'Aucune',
+    subtitleBackdropShadow: 'Ombre portée',
+    subtitleBackdropScrim: 'Voile dégradé',
   },
   presets: {
     'high-contrast': 'Grand contraste',
@@ -305,6 +338,11 @@ const fr: Messages = {
     deviceNone: 'Aucun périphérique détecté',
     permissionDenied: 'Accès au microphone refusé.',
     levelLabel: "Niveau d'entrée",
+    videoTitle: 'Source vidéo',
+    videoSub: "Webcam, ou un boîtier de capture HDMI/UVC (Elgato Cam Link, Atomos…) si la régie envoie un signal caméra. Activez ensuite la diffusion vidéo depuis l'onglet Régie.",
+    videoDeviceLabel: 'Source',
+    videoDeviceNone: 'Aucune source vidéo détectée',
+    videoPermissionDenied: 'Accès à la caméra refusé.',
     costsTitle: 'Coûts & usage',
     costsSub: 'Estimation locale basée sur la durée de session.',
     sessionLabel: 'Session en cours',
@@ -371,6 +409,15 @@ const en: Messages = {
     statusClosed: 'Closed',
     label: 'Display',
   },
+  video: {
+    label: 'Video',
+    toggleOn: 'Enable video',
+    toggleOff: 'Disable video',
+    statusOn: 'On',
+    statusOff: 'Off',
+    pickFirst: 'Pick a video source in Setup first',
+    previewUnavailable: 'Preview unavailable — the camera is likely in use by the audience window',
+  },
   stage: {
     eyebrow: 'Stage',
     titleA: 'Make the spoken word ',
@@ -427,6 +474,11 @@ const en: Messages = {
     behaviorPartialSub: "Words appear as they're recognized",
     behaviorAutoScroll: 'Auto-scroll',
     behaviorAutoScrollSub: 'Always show the most recent line',
+    subtitleBackdropLabel: 'Readability over video',
+    subtitleBackdropSub: 'Used when a video feed is shown behind the subtitles.',
+    subtitleBackdropNone: 'None',
+    subtitleBackdropShadow: 'Drop shadow',
+    subtitleBackdropScrim: 'Bottom scrim',
   },
   presets: {
     'high-contrast': 'High contrast',
@@ -491,6 +543,11 @@ const en: Messages = {
     deviceNone: 'No device detected',
     permissionDenied: 'Microphone access denied.',
     levelLabel: 'Input level',
+    videoTitle: 'Video source',
+    videoSub: 'A webcam, or an HDMI/UVC capture device (Elgato Cam Link, Atomos…) if the venue is sending you a camera feed. Then toggle the video on from the Stage tab.',
+    videoDeviceLabel: 'Source',
+    videoDeviceNone: 'No video source detected',
+    videoPermissionDenied: 'Camera access denied.',
     costsTitle: 'Costs & usage',
     costsSub: 'Local estimate based on session duration.',
     sessionLabel: 'Current session',

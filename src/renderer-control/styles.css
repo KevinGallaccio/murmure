@@ -796,9 +796,17 @@ a { color: var(--brand); text-decoration: none; }
   border-radius: 16px;
   padding: 28px 32px;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  /* 1fr · auto · 1fr keeps the broadcast-status visually centered between
+     the timer (left) and a balancing spacer (right) even though the third
+     column is now empty (display/video moved to the outputs deck above). */
+  grid-template-columns: 1fr auto 1fr;
   gap: 28px;
   align-items: center;
+}
+.broadcast-card::after {
+  content: '';
+  /* Right-column spacer so the broadcast-status stays mathematically
+     centered. Empty by design — the destinations live in .outputs-deck. */
 }
 
 .timer-block { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -876,30 +884,167 @@ a { color: var(--brand); text-decoration: none; }
 .broadcast-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .broadcast-btn .ico { width: 14px; height: 14px; }
 
-.display-block {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
+/* Outputs deck — slim editorial strip of the broadcast destinations
+   (audience display + behind-the-text video feed). Sits above the
+   broadcast card and uses the same typographic register as the rest
+   of the operator UI: mono micro-labels, Fraunces italic for state,
+   underlined-link actions that don't compete with the CTA below. */
+.outputs-deck {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
 }
-.display-status {
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+
+/* Vertical hairline between the two destinations — centered, with
+   short top/bottom inset so it reads as a divider rather than a border. */
+.outputs-deck::before {
+  content: '';
+  position: absolute;
+  top: 18%;
+  bottom: 18%;
+  left: 50%;
+  width: 1px;
+  background: var(--line);
+  pointer-events: none;
+}
+
+.output-cell {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 22px;
+  row-gap: 6px;
+  padding: 18px 26px;
+}
+
+.output-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  grid-column: 1 / 2;
+  grid-row: 1;
+}
+
+.output-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
   color: var(--ink-4);
-  font-weight: 500;
-  text-align: right;
+  /* Hairline rule under the slate-number, like a film slate. */
+  border-bottom: 1px solid var(--line-2);
+  padding-bottom: 1px;
 }
-.display-status .v {
-  font-style: italic;
+
+.output-label {
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.output-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-4);
+  opacity: 0.35;
+  margin-left: 2px;
+  transition: background 220ms var(--ease), opacity 220ms var(--ease),
+    box-shadow 260ms var(--ease);
+}
+.output-dot.on {
+  background: var(--brand);
+  opacity: 1;
+  box-shadow: 0 0 0 4px var(--brand-soft);
+  animation: output-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes output-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--brand-soft); }
+  50%      { box-shadow: 0 0 0 6px var(--brand-soft); }
+}
+
+.output-state {
   font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 16px;
-  text-transform: none;
-  letter-spacing: 0;
+  font-style: italic;
+  font-variation-settings: "opsz" 24, "wght" 380;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  line-height: 1;
   color: var(--ink);
-  display: block;
-  margin-top: 2px;
+  grid-column: 1 / 2;
+  grid-row: 2;
+  /* small visual hang so the italic feels intentional in the cell */
+  margin-left: -1px;
+}
+
+.output-action {
+  grid-column: 2 / 3;
+  grid-row: 1 / 3;
+  align-self: end;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 0;
+  background: transparent;
+  border: 0;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  letter-spacing: -0.005em;
+  position: relative;
+  transition: color 160ms var(--ease);
+}
+.output-action .ico {
+  flex-shrink: 0;
+  color: var(--ink-3);
+  transition: color 160ms var(--ease), transform 200ms var(--ease);
+}
+
+.output-action-text {
+  position: relative;
+  display: inline-block;
+}
+/* Editorial underline: hairline that scales in from the left on hover.
+   Uses currentColor so it tracks the brand-on-hover color shift. */
+.output-action-text::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 220ms var(--ease);
+}
+
+.output-action:hover:not(:disabled) {
+  color: var(--brand);
+}
+.output-action:hover:not(:disabled) .ico {
+  color: var(--brand);
+  transform: translateX(1px);
+}
+.output-action:hover:not(:disabled) .output-action-text::after {
+  transform: scaleX(1);
+}
+
+.output-action:disabled {
+  color: var(--ink-4);
+  cursor: not-allowed;
+}
+.output-action:disabled .ico {
+  color: var(--ink-4);
 }
 
 /* Audience monitor card ------------------------------------- */
@@ -1259,7 +1404,18 @@ a { color: var(--brand); text-decoration: none; }
   .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
   .controls-grid, .setup-grid { grid-template-columns: 1fr; }
   .broadcast-card { grid-template-columns: 1fr; gap: 18px; }
-  .display-block { align-items: flex-start; }
+  /* Stack the two outputs cells when there isn't room for them
+     side-by-side, and replace the vertical divider with a horizontal one. */
+  .outputs-deck { grid-template-columns: 1fr; }
+  .outputs-deck::before {
+    top: auto;
+    bottom: auto;
+    left: 18%;
+    right: 18%;
+    width: auto;
+    height: 1px;
+    top: 50%;
+  }
 }
 
 /* Scrollbar polish ----------------------------------------- */

@@ -11,6 +11,7 @@ import type {
   ResolvedLocale,
   Theme,
   TranscriptionLanguage,
+  VideoState,
 } from '../shared/ipc';
 
 export type SessionRecord = {
@@ -38,6 +39,11 @@ export type PersistedState = {
   // in StartRecognition.
   transcriptionLanguage: TranscriptionLanguage;
   selectedDeviceId: string | null;
+  // v1.3.0 — webcam feed behind subtitles on the audience display.
+  // Persisted independently from the audio device so picking a camera in
+  // Setup is sticky across launches even when video is currently disabled.
+  videoEnabled: boolean;
+  selectedVideoDeviceId: string | null;
   style: StyleSettings;
   theme: Theme;
   language: LanguageChoice;
@@ -62,6 +68,8 @@ const initialState: PersistedState = {
   provider: 'speechmatics',
   transcriptionLanguage: 'fr',
   selectedDeviceId: null,
+  videoEnabled: false,
+  selectedVideoDeviceId: null,
   style: DEFAULT_STYLE,
   theme: 'light',
   language: 'auto',
@@ -147,6 +155,29 @@ export function getSelectedDeviceId(): string | null {
 
 export function setSelectedDeviceId(id: string | null): void {
   store.set('selectedDeviceId', id);
+}
+
+export function getVideoEnabled(): boolean {
+  return store.get('videoEnabled') ?? false;
+}
+
+export function setVideoEnabled(enabled: boolean): void {
+  store.set('videoEnabled', enabled);
+}
+
+export function getSelectedVideoDeviceId(): string | null {
+  return store.get('selectedVideoDeviceId') ?? null;
+}
+
+export function setSelectedVideoDeviceId(id: string | null): void {
+  store.set('selectedVideoDeviceId', id);
+}
+
+export function getVideoState(): VideoState {
+  return {
+    enabled: getVideoEnabled(),
+    deviceId: getSelectedVideoDeviceId(),
+  };
 }
 
 export function saveApiKey(provider: Provider, plaintext: string): void {

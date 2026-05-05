@@ -21,6 +21,7 @@ import type {
   TranscriptionLanguage,
   TranscriptionLanguageState,
   UsageUpdate,
+  VideoState,
 } from '../shared/ipc';
 import type { StyleSettings } from '../shared/style';
 import { DEFAULT_STYLE, STYLE_PRESETS, type StylePresetId } from '../shared/style';
@@ -73,6 +74,12 @@ declare global {
       mock: {
         setEnabled: (enabled: boolean) => Promise<MockState>;
         onState: (cb: (s: MockState) => void) => () => void;
+      };
+      video: {
+        get: () => Promise<VideoState>;
+        setEnabled: (enabled: boolean) => Promise<VideoState>;
+        setDevice: (deviceId: string | null) => Promise<VideoState>;
+        onChange: (cb: (s: VideoState) => void) => () => void;
       };
       usage: {
         onUpdate: (cb: (u: UsageUpdate) => void) => () => void;
@@ -177,6 +184,7 @@ export function App(): JSX.Element {
   });
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
   const [mockEnabled, setMockEnabled] = useState(true);
+  const [video, setVideoState] = useState<VideoState>({ enabled: false, deviceId: null });
   const [deviceId, setDeviceIdState] = useState<string | null>(
     () => window.localStorage.getItem(STORAGE_DEVICE_ID),
   );
@@ -278,6 +286,8 @@ export function App(): JSX.Element {
     });
     const offMock = window.diffuseur.mock.onState((s) => setMockEnabled(s.enabled));
     const offUsage = window.diffuseur.usage.onUpdate(setUsage);
+    void window.diffuseur.video.get().then(setVideoState);
+    const offVideo = window.diffuseur.video.onChange(setVideoState);
     return () => {
       offState();
       offErr();
@@ -288,6 +298,7 @@ export function App(): JSX.Element {
       offDispChange();
       offMock();
       offUsage();
+      offVideo();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -388,6 +399,14 @@ export function App(): JSX.Element {
     }
   }, [displayState.isOpen, displays]);
 
+  const onVideoToggle = useCallback(() => {
+    void window.diffuseur.video.setEnabled(!video.enabled);
+  }, [video.enabled]);
+
+  const onVideoDeviceChange = useCallback((id: string | null) => {
+    void window.diffuseur.video.setDevice(id);
+  }, []);
+
   const onClearLog = useCallback(() => setLog([]), []);
 
   /* ------- Derived state ---------- */
@@ -441,8 +460,11 @@ export function App(): JSX.Element {
               finalLines={finalLines}
               partial={partial}
               appearance={style}
+              videoEnabled={video.enabled}
+              videoDeviceId={video.deviceId}
               onBroadcastToggle={onBroadcastToggle}
               onDisplayToggle={onDisplayToggle}
+              onVideoToggle={onVideoToggle}
               onGoToSetup={() => setTab('setup')}
             />
           )}
@@ -467,6 +489,8 @@ export function App(): JSX.Element {
               selectedDeviceId={deviceId}
               onDeviceChange={onDeviceChange}
               deviceDisabled={streamState === 'streaming' || streamState === 'connecting'}
+              videoDeviceId={video.deviceId}
+              onVideoDeviceChange={onVideoDeviceChange}
               log={log}
               onClearLog={onClearLog}
               onResetUsage={() => void window.diffuseur.usage.reset()}

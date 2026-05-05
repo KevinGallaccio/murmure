@@ -20,6 +20,7 @@ import type {
   TranscriptionLanguageState,
   UpdateStatus,
   UsageUpdate,
+  VideoState,
 } from '../shared/ipc';
 import { IPC } from '../shared/ipc';
 import type { StyleSettings } from '../shared/style';
@@ -89,6 +90,14 @@ const api = {
     setEnabled: (enabled: boolean): Promise<MockState> =>
       ipcRenderer.invoke(IPC.MockSetEnabled, { enabled }),
     onState: (cb: (s: MockState) => void) => subscribe<MockState>(IPC.MockState, cb),
+  },
+  video: {
+    get: (): Promise<VideoState> => ipcRenderer.invoke(IPC.VideoStateGet),
+    setEnabled: (enabled: boolean): Promise<VideoState> =>
+      ipcRenderer.invoke(IPC.VideoSetEnabled, { enabled }),
+    setDevice: (deviceId: string | null): Promise<VideoState> =>
+      ipcRenderer.invoke(IPC.VideoSetDevice, { deviceId }),
+    onChange: (cb: (s: VideoState) => void) => subscribe<VideoState>(IPC.VideoStateChanged, cb),
   },
   usage: {
     onUpdate: (cb: (u: UsageUpdate) => void) => subscribe<UsageUpdate>(IPC.UsageUpdate, cb),

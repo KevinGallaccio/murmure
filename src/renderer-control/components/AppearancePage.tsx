@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { StyleSettings } from '../../shared/style';
+import type { StyleSettings, SubtitleBackdrop } from '../../shared/style';
 import { FONT_FAMILY_IDS, STYLE_PRESETS, type FontFamilyId, type StylePresetId } from '../../shared/style';
 import { useT } from '../i18n';
 import { IconEye, IconRefresh } from './Icons';
@@ -180,6 +180,35 @@ export function AppearancePage({ appearance, onPatch, onPreset, onReset }: Props
                 value={appearance.liveColor}
                 onChange={(v) => onPatch({ liveColor: v, presetId: null })}
               />
+            </Field>
+
+            <Field label={t.appearance.subtitleBackdropLabel}>
+              <div className="seg">
+                {(
+                  [
+                    { v: 'none' as const, label: t.appearance.subtitleBackdropNone },
+                    { v: 'shadow' as const, label: t.appearance.subtitleBackdropShadow },
+                    { v: 'scrim' as const, label: t.appearance.subtitleBackdropScrim },
+                  ]
+                ).map((o) => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    className={appearance.subtitleBackdrop === o.v ? 'active' : ''}
+                    onClick={() =>
+                      onPatch({ subtitleBackdrop: o.v as SubtitleBackdrop, presetId: null })
+                    }
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              <p
+                className="card-sub"
+                style={{ margin: '6px 0 0', fontSize: 11, color: 'var(--ink-4)' }}
+              >
+                {t.appearance.subtitleBackdropSub}
+              </p>
             </Field>
           </div>
 

@@ -6,6 +6,7 @@ import {
   type StreamState,
   type TranscriptFinal,
   type TranscriptPartial,
+  type VideoState,
 } from '../shared/ipc';
 import type { StyleSettings } from '../shared/style';
 
@@ -24,6 +25,7 @@ const api = {
   onMockState: (cb: (s: MockState) => void) => subscribe<MockState>(IPC.MockState, cb),
   onStreamState: (cb: (s: StreamState) => void) => subscribe<StreamState>(IPC.StreamState, cb),
   onDisplayState: (cb: (s: DisplayState) => void) => subscribe<DisplayState>(IPC.DisplayState, cb),
+  onVideoState: (cb: (s: VideoState) => void) => subscribe<VideoState>(IPC.VideoStateChanged, cb),
 };
 
 contextBridge.exposeInMainWorld('diffuseurDisplay', api);

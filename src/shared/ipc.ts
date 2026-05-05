@@ -82,6 +82,15 @@ export const IPC = {
   MockSetEnabled: 'mock:set-enabled',
   MockState: 'mock:state',
 
+  // Video feed shown behind subtitles on the audience display window.
+  // The control window picks the camera deviceId in Setup; the operator
+  // toggles enabled/disabled from Stage. State is broadcast to both
+  // windows so the operator preview and the audience view stay in sync.
+  VideoStateGet: 'video:state:get',
+  VideoSetEnabled: 'video:set-enabled',
+  VideoSetDevice: 'video:set-device',
+  VideoStateChanged: 'video:state',
+
   UsageReset: 'usage:reset',
   UsageGetRate: 'usage:get-rate',
   UsageSetRate: 'usage:set-rate',
@@ -112,6 +121,8 @@ export type DisplayState = {
 };
 
 export type MockState = { enabled: boolean };
+
+export type VideoState = { enabled: boolean; deviceId: string | null };
 
 export type Theme = 'light' | 'dark';
 export type LanguageChoice = 'en' | 'fr' | 'auto';

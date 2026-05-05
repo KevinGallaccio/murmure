@@ -20,6 +20,8 @@ type Props = {
   selectedDeviceId: string | null;
   onDeviceChange: (id: string | null) => void;
   deviceDisabled: boolean;
+  videoDeviceId: string | null;
+  onVideoDeviceChange: (id: string | null) => void;
   log: LogEntry[];
   onClearLog: () => void;
   onResetUsage: () => void;
@@ -40,6 +42,8 @@ export function SetupPage({
   selectedDeviceId,
   onDeviceChange,
   deviceDisabled,
+  videoDeviceId,
+  onVideoDeviceChange,
   log,
   onClearLog,
   onResetUsage,
@@ -189,6 +193,17 @@ export function SetupPage({
           <Field label={t.setup.levelLabel} style={{ marginTop: 16 }}>
             <VuMeter level={rms} />
           </Field>
+        </div>
+
+        {/* Camera (video feed shown behind subtitles in v1.3+) */}
+        <div className="card">
+          <h3 className="card-title">{t.setup.videoTitle}</h3>
+          <p className="card-sub">{t.setup.videoSub}</p>
+
+          <VideoDevicePickerControl
+            selectedDeviceId={videoDeviceId}
+            onChange={onVideoDeviceChange}
+          />
         </div>
 
         {/* Costs */}
@@ -447,6 +462,75 @@ function DevicePickerControl({
         {devices.map((d) => (
           <option key={d.deviceId} value={d.deviceId}>
             {d.label || `Microphone (${d.deviceId.slice(0, 6)})`}
+          </option>
+        ))}
+      </select>
+      {permissionError && (
+        <span className="status-line err" style={{ marginTop: 6 }}>
+          {permissionError}
+        </span>
+      )}
+    </Field>
+  );
+}
+
+function VideoDevicePickerControl({
+  selectedDeviceId,
+  onChange,
+}: {
+  selectedDeviceId: string | null;
+  onChange: (id: string | null) => void;
+}): JSX.Element {
+  const t = useT();
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function refresh(): Promise<void> {
+      try {
+        // Probe to unlock device labels (browsers withhold them until the
+        // user grants camera permission for the origin at least once).
+        const probe = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+        probe.getTracks().forEach((tr) => tr.stop());
+      } catch (err) {
+        setPermissionError((err as Error).message ?? t.setup.videoPermissionDenied);
+        return;
+      }
+      const all = await navigator.mediaDevices.enumerateDevices();
+      if (cancelled) return;
+      const inputs = all.filter((d) => d.kind === 'videoinput');
+      setDevices(inputs);
+      if (selectedDeviceId && !inputs.find((d) => d.deviceId === selectedDeviceId)) {
+        // Saved device disappeared (camera unplugged) — clear so the
+        // display renderer doesn't keep trying to open it.
+        onChange(null);
+      } else if (!selectedDeviceId && inputs.length > 0) {
+        // First-time pick: default to the first camera the OS reports.
+        onChange(inputs[0].deviceId);
+      }
+    }
+    void refresh();
+    const onDevChange = () => void refresh();
+    navigator.mediaDevices.addEventListener('devicechange', onDevChange);
+    return () => {
+      cancelled = true;
+      navigator.mediaDevices.removeEventListener('devicechange', onDevChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Field label={t.setup.videoDeviceLabel}>
+      <select
+        className="select"
+        value={selectedDeviceId ?? ''}
+        onChange={(e) => onChange(e.target.value || null)}
+      >
+        {devices.length === 0 && <option value="">{t.setup.videoDeviceNone}</option>}
+        {devices.map((d) => (
+          <option key={d.deviceId} value={d.deviceId}>
+            {d.label || `Source (${d.deviceId.slice(0, 6)})`}
           </option>
         ))}
       </select>

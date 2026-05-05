@@ -27,11 +27,18 @@ function init(): void {
 }
 
 app.whenReady().then(async () => {
-  // On macOS, proactively request OS-level mic permission once at startup.
-  // After the user grants it the first time, this becomes a no-op on every launch.
+  // On macOS, proactively request OS-level mic and camera permission once at
+  // startup. After the user grants either the first time, this becomes a
+  // no-op on every launch. Camera is needed for the video-feed feature added
+  // in v1.3.0; both prompts fire back-to-back if neither has been granted yet.
   if (process.platform === 'darwin') {
     try {
       await systemPreferences.askForMediaAccess('microphone');
+    } catch {
+      // Non-fatal — the renderer will surface a clearer error if access is missing.
+    }
+    try {
+      await systemPreferences.askForMediaAccess('camera');
     } catch {
       // Non-fatal — the renderer will surface a clearer error if access is missing.
     }

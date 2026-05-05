@@ -26,14 +26,17 @@ import {
   getStyleSettings,
   getTheme,
   getTranscriptionLanguage,
+  getVideoState,
   hasApiKey,
   resetStyle,
   resolveLocale,
   saveApiKey,
   setLanguageChoice,
   setProvider,
+  setSelectedVideoDeviceId,
   setTheme,
   setTranscriptionLanguage,
+  setVideoEnabled,
   updateStyle,
 } from './settings';
 import { findDisplay, listDisplays } from './displays';
@@ -306,6 +309,23 @@ export function registerIpc(controlWindow: BrowserWindow): void {
     return next;
   });
 
+  // Video state — broadcast to both windows so the operator preview and
+  // the audience display stay in lockstep regardless of which side
+  // initiated the change.
+  ipcMain.handle(IPC.VideoStateGet, () => getVideoState());
+  ipcMain.handle(IPC.VideoSetEnabled, (_e, payload: { enabled: boolean }) => {
+    setVideoEnabled(payload.enabled);
+    const next = getVideoState();
+    broadcast(IPC.VideoStateChanged, next);
+    return next;
+  });
+  ipcMain.handle(IPC.VideoSetDevice, (_e, payload: { deviceId: string | null }) => {
+    setSelectedVideoDeviceId(payload.deviceId);
+    const next = getVideoState();
+    broadcast(IPC.VideoStateChanged, next);
+    return next;
+  });
+
   ipcMain.handle(IPC.DisplayList, () => listDisplays());
   ipcMain.handle(IPC.DisplayOpen, (_e, payload?: { displayId?: number }) => {
     if (ctx.displayWindow && !ctx.displayWindow.isDestroyed()) {
@@ -320,6 +340,7 @@ export function registerIpc(controlWindow: BrowserWindow): void {
       win.webContents.send(IPC.StyleApply, getStyleSettings());
       win.webContents.send(IPC.MockState, { enabled: mockEnabled });
       win.webContents.send(IPC.DisplayState, getDisplayState());
+      win.webContents.send(IPC.VideoStateChanged, getVideoState());
     });
 
     win.on('closed', () => {
@@ -406,5 +427,6 @@ export function registerIpc(controlWindow: BrowserWindow): void {
     sendToControl(IPC.StyleApply, getStyleSettings());
     sendToControl(IPC.MockState, { enabled: mockEnabled });
     sendToControl(IPC.DisplayState, getDisplayState());
+    sendToControl(IPC.VideoStateChanged, getVideoState());
   });
 }

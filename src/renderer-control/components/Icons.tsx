@@ -15,6 +15,8 @@ import {
   Sun,
   TriangleAlert,
   Type,
+  Video,
+  VideoOff,
   X,
   type LucideProps,
 } from 'lucide-react';
@@ -87,3 +89,5 @@ export const IconGlobe = lucide(Globe);
 export const IconSun = lucide(Sun);
 export const IconMoon = lucide(Moon);
 export const IconWarn = lucide(TriangleAlert);
+export const IconVideo = lucide(Video);
+export const IconVideoOff = lucide(VideoOff);
